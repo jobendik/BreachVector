@@ -62,10 +62,37 @@ export const levels: LevelData[] = [
       { x: 1900, y: 1110, type: 'grenade' }
     ],
     enemies: [
-      { role: 'assault', x: 460, y: 330, patrol: [{ x: 420, y: 330 }, { x: 740, y: 330 }], angle: 0 },
-      { role: 'flanker', x: 760, y: 850, patrol: [{ x: 720, y: 850 }, { x: 1040, y: 840 }], angle: Math.PI },
+      {
+        role: 'assault',
+        x: 460,
+        y: 330,
+        patrol: [
+          { x: 420, y: 330 },
+          { x: 740, y: 330 }
+        ],
+        angle: 0
+      },
+      {
+        role: 'flanker',
+        x: 760,
+        y: 850,
+        patrol: [
+          { x: 720, y: 850 },
+          { x: 1040, y: 840 }
+        ],
+        angle: Math.PI
+      },
       { role: 'sniper', x: 1260, y: 300, angle: Math.PI * 0.7 },
-      { role: 'assault', x: 1520, y: 550, patrol: [{ x: 1480, y: 550 }, { x: 1880, y: 550 }], angle: Math.PI },
+      {
+        role: 'assault',
+        x: 1520,
+        y: 550,
+        patrol: [
+          { x: 1480, y: 550 },
+          { x: 1880, y: 550 }
+        ],
+        angle: Math.PI
+      },
       { role: 'heavy', x: 1240, y: 900, angle: Math.PI },
       { role: 'captain', x: 1880, y: 250, angle: Math.PI }
     ]
@@ -125,11 +152,38 @@ export const levels: LevelData[] = [
       { x: 2190, y: 1160, type: 'medkit' }
     ],
     enemies: [
-      { role: 'flanker', x: 410, y: 460, patrol: [{ x: 350, y: 460 }, { x: 460, y: 950 }], angle: Math.PI / 2 },
+      {
+        role: 'flanker',
+        x: 410,
+        y: 460,
+        patrol: [
+          { x: 350, y: 460 },
+          { x: 460, y: 950 }
+        ],
+        angle: Math.PI / 2
+      },
       { role: 'assault', x: 830, y: 220, angle: Math.PI / 2 },
       { role: 'sniper', x: 1130, y: 620, angle: Math.PI },
-      { role: 'heavy', x: 980, y: 1000, patrol: [{ x: 840, y: 1000 }, { x: 1140, y: 1000 }], angle: 0 },
-      { role: 'assault', x: 1660, y: 340, patrol: [{ x: 1620, y: 340 }, { x: 1940, y: 340 }], angle: Math.PI },
+      {
+        role: 'heavy',
+        x: 980,
+        y: 1000,
+        patrol: [
+          { x: 840, y: 1000 },
+          { x: 1140, y: 1000 }
+        ],
+        angle: 0
+      },
+      {
+        role: 'assault',
+        x: 1660,
+        y: 340,
+        patrol: [
+          { x: 1620, y: 340 },
+          { x: 1940, y: 340 }
+        ],
+        angle: Math.PI
+      },
       { role: 'flanker', x: 1660, y: 960, angle: Math.PI },
       { role: 'sniper', x: 2200, y: 690, angle: Math.PI },
       { role: 'captain', x: 2180, y: 250, angle: Math.PI }

@@ -54,7 +54,13 @@ export class CombatSystem {
     this.world.effects.hit(prop.x, prop.y, prop.explosive ? 0xf97316 : 0x94a3b8);
     if (destroyed && prop.explosive) {
       this.world.scene.time.delayedCall(45, () => {
-        this.explosion(new Phaser.Math.Vector2(prop.x, prop.y), WORLD_BALANCE.barrelRadius, WORLD_BALANCE.barrelDamage, source.team, 0xf97316);
+        this.explosion(
+          new Phaser.Math.Vector2(prop.x, prop.y),
+          WORLD_BALANCE.barrelRadius,
+          WORLD_BALANCE.barrelDamage,
+          source.team,
+          0xf97316
+        );
       });
     } else if (destroyed) {
       this.world.effects.explosion(prop.x, prop.y, 0x64748b, 0.45);

@@ -12,8 +12,8 @@ export class Prop extends Phaser.Physics.Arcade.Sprite {
   dead = false;
 
   constructor(scene: Phaser.Scene, data: PropData) {
-    const w = data.kind === 'barrel' ? 34 : data.w ?? 70;
-    const h = data.kind === 'barrel' ? 34 : data.h ?? 50;
+    const w = data.kind === 'barrel' ? 34 : (data.w ?? 70);
+    const h = data.kind === 'barrel' ? 34 : (data.h ?? 50);
     super(scene, data.x, data.y, data.kind === 'barrel' ? TextureKeys.Barrel : TextureKeys.Crate);
     this.propKind = data.kind;
     this.rect = { x: data.x - w / 2, y: data.y - h / 2, w, h };

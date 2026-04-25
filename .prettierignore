@@ -1,0 +1,7 @@
+dist
+node_modules
+BreachVector.zip
+package-lock.json
+*.md
+test-results
+playwright-report

@@ -384,7 +384,10 @@ export class GameScene extends Phaser.Scene {
           Phaser.Math.Distance.Between(this.player.x, this.player.y, a.x, a.y) -
           Phaser.Math.Distance.Between(this.player.x, this.player.y, b.x, b.y)
       )[0];
-    if (!target || Phaser.Math.Distance.Between(this.player.x, this.player.y, target.x, target.y) > PLAYER_BALANCE.meleeRange) {
+    if (
+      !target ||
+      Phaser.Math.Distance.Between(this.player.x, this.player.y, target.x, target.y) > PLAYER_BALANCE.meleeRange
+    ) {
       return;
     }
     this.player.meleeCooldown = 0.65;
@@ -453,7 +456,8 @@ export class GameScene extends Phaser.Scene {
       if (enemy.dead) {
         enemy.setAlpha(0);
       } else {
-        const visible = this.debug.enabled || this.vision.isVisibleFromPlayer(enemy.positionVector) || enemy.recentlyVisible;
+        const visible =
+          this.debug.enabled || this.vision.isVisibleFromPlayer(enemy.positionVector) || enemy.recentlyVisible;
         enemy.setAlpha(visible ? 1 : 0.18);
       }
     }
@@ -472,9 +476,7 @@ export class GameScene extends Phaser.Scene {
   private emitHudState(): void {
     const weaponState = this.player.selectedWeapon;
     const reloadRatio =
-      weaponState.reloadRemaining > 0
-        ? 1 - weaponState.reloadRemaining / weaponState.definition.reloadTime
-        : 0;
+      weaponState.reloadRemaining > 0 ? 1 - weaponState.reloadRemaining / weaponState.definition.reloadTime : 0;
     const state: HudState = {
       health: this.player.health,
       maxHealth: this.player.maxHealth,

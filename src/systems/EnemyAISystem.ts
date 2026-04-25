@@ -30,13 +30,19 @@ export class EnemyAISystem {
       }
 
       const seesPlayer = this.world.vision.canEnemySeePlayer(enemy, this.world.player);
-      enemy.recentlyVisible = debugEnabled || this.world.alert.state === 'detected' || this.world.vision.isVisibleFromPlayer(enemy.positionVector);
+      enemy.recentlyVisible =
+        debugEnabled ||
+        this.world.alert.state === 'detected' ||
+        this.world.vision.isVisibleFromPlayer(enemy.positionVector);
       if (seesPlayer) {
         enemy.lastKnownPlayer = this.world.player.positionVector;
         enemy.lostSightTimer = 1.4;
         enemy.setAIState(enemy.role === 'flanker' ? EnemyState.Flank : EnemyState.Attack);
         this.world.alert.raiseDetected(3.4);
-      } else if ((enemy.aiState === EnemyState.Attack || enemy.aiState === EnemyState.Flank) && enemy.lostSightTimer <= 0) {
+      } else if (
+        (enemy.aiState === EnemyState.Attack || enemy.aiState === EnemyState.Flank) &&
+        enemy.lostSightTimer <= 0
+      ) {
         enemy.setAIState(EnemyState.Search);
       }
 
@@ -53,27 +59,32 @@ export class EnemyAISystem {
     switch (enemy.aiState) {
       case EnemyState.Guard:
         enemy.stopMoving();
-        break;
+        return;
       case EnemyState.Patrol:
         this.updatePatrol(enemy);
-        break;
+        return;
       case EnemyState.Suspicious:
         this.updateSuspicious(enemy);
-        break;
+        return;
       case EnemyState.Search:
         this.updateSearch(enemy, deltaSeconds);
-        break;
+        return;
       case EnemyState.Flank:
         this.updateFlank(enemy);
-        break;
+        return;
       case EnemyState.Cover:
         this.updateCover(enemy);
-        break;
+        return;
       case EnemyState.Attack:
-      default:
         this.updateAttack(enemy);
-        break;
+        return;
+      case EnemyState.Reload:
+      case EnemyState.Dead:
+        enemy.stopMoving();
+        return;
     }
+
+    assertNever(enemy.aiState);
   }
 
   private updatePatrol(enemy: Enemy): void {
@@ -106,7 +117,10 @@ export class EnemyAISystem {
       enemy.setAIState(EnemyState.Patrol);
       return;
     }
-    if (!enemy.investigatePoint || Phaser.Math.Distance.Between(enemy.x, enemy.y, enemy.investigatePoint.x, enemy.investigatePoint.y) < 28) {
+    if (
+      !enemy.investigatePoint ||
+      Phaser.Math.Distance.Between(enemy.x, enemy.y, enemy.investigatePoint.x, enemy.investigatePoint.y) < 28
+    ) {
       enemy.investigatePoint = enemy.lastKnownPlayer
         .clone()
         .add(new Phaser.Math.Vector2(Phaser.Math.Between(-120, 120), Phaser.Math.Between(-120, 120)));
@@ -137,14 +151,20 @@ export class EnemyAISystem {
     if (distance > enemy.config.preferredRange * 1.12) {
       enemy.moveToward(target, enemy.role === 'heavy' ? 0.75 : 1);
     } else if (distance < enemy.config.preferredRange * 0.52) {
-      const away = enemy.positionVector.subtract(target).normalize().scale(enemy.moveSpeed * 0.85);
+      const away = enemy.positionVector
+        .subtract(target)
+        .normalize()
+        .scale(enemy.moveSpeed * 0.85);
       const body = enemy.body as Phaser.Physics.Arcade.Body;
       body.setVelocity(away.x, away.y);
     } else {
       enemy.stopMoving();
     }
 
-    if (distance <= enemy.config.attackRange && this.world.vision.hasLineOfSight(enemy.positionVector, player.positionVector)) {
+    if (
+      distance <= enemy.config.attackRange &&
+      this.world.vision.hasLineOfSight(enemy.positionVector, player.positionVector)
+    ) {
       this.world.weapons.tryFireEnemy(enemy, player.positionVector);
     }
   }
@@ -200,4 +220,8 @@ export class EnemyAISystem {
     }
     return best;
   }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled enemy state: ${value}`);
 }

@@ -21,5 +21,11 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
       - name: Check
         run: npm run check
+
+      - name: Smoke Test
+        run: npm run test:smoke

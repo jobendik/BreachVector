@@ -10,8 +10,14 @@ export class HealthArmorPanel {
 
   constructor(private readonly scene: Phaser.Scene) {
     this.graphics = scene.add.graphics().setScrollFactor(0).setDepth(DEPTHS.ui);
-    this.title = scene.add.text(0, 0, 'OPERATOR', this.textStyle(12, '#67e8f9')).setScrollFactor(0).setDepth(DEPTHS.ui + 1);
-    this.stats = scene.add.text(0, 0, '', this.textStyle(11, '#cbd5e1')).setScrollFactor(0).setDepth(DEPTHS.ui + 1);
+    this.title = scene.add
+      .text(0, 0, 'OPERATOR', this.textStyle(12, '#67e8f9'))
+      .setScrollFactor(0)
+      .setDepth(DEPTHS.ui + 1);
+    this.stats = scene.add
+      .text(0, 0, '', this.textStyle(11, '#cbd5e1'))
+      .setScrollFactor(0)
+      .setDepth(DEPTHS.ui + 1);
   }
 
   layout(x: number, y: number, width: number, height: number): void {
@@ -27,7 +33,9 @@ export class HealthArmorPanel {
     this.bar(x + 16, y + 42, width - 32, 18, state.health / state.maxHealth, 0x22c55e, 0x34d399);
     this.bar(x + 16, y + 72, width - 32, 15, state.armor / Math.max(1, state.maxArmor), 0x38bdf8, 0xa5f3fc);
     this.bar(x + 16, y + 100, width - 32, 10, state.dashRatio, 0xf59e0b, 0xfbbf24);
-    this.stats.setText(`HP ${Math.ceil(state.health)}/${state.maxHealth}   AR ${Math.ceil(state.armor)}/${state.maxArmor}`);
+    this.stats.setText(
+      `HP ${Math.ceil(state.health)}/${state.maxHealth}   AR ${Math.ceil(state.armor)}/${state.maxArmor}`
+    );
   }
 
   private panel(x: number, y: number, width: number, height: number, accent: number): void {
@@ -43,7 +51,13 @@ export class HealthArmorPanel {
     this.graphics.fillStyle(0x020617, 0.9);
     this.graphics.fillRoundedRect(x, y, width, height, 4);
     this.graphics.fillGradientStyle(start, end, start, end, 1, 1, 1, 1);
-    this.graphics.fillRoundedRect(x + 2, y + 2, Math.max(2, (width - 4) * Phaser.Math.Clamp(ratio, 0, 1)), height - 4, 3);
+    this.graphics.fillRoundedRect(
+      x + 2,
+      y + 2,
+      Math.max(2, (width - 4) * Phaser.Math.Clamp(ratio, 0, 1)),
+      height - 4,
+      3
+    );
   }
 
   private textStyle(size: number, color: string): Phaser.Types.GameObjects.Text.TextStyle {

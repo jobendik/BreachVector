@@ -41,7 +41,8 @@ export class DebugSystem {
         continue;
       }
 
-      const color = enemy.aiState === EnemyState.Attack || enemy.aiState === EnemyState.Flank ? COLORS.red : COLORS.amber;
+      const color =
+        enemy.aiState === EnemyState.Attack || enemy.aiState === EnemyState.Flank ? COLORS.red : COLORS.amber;
       this.graphics.lineStyle(1, color, 0.35);
       this.graphics.beginPath();
       this.graphics.moveTo(enemy.x, enemy.y);

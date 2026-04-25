@@ -4,6 +4,8 @@ export type AlertState = 'hidden' | 'searching' | 'detected';
 
 export type WeaponId = 'silenced-pistol' | 'pulse-rifle' | 'scattergun' | 'rail-piercer';
 
+export type LevelId = 'blacksite-approach' | 'vault-core';
+
 export type EnemyRole = 'assault' | 'sniper' | 'flanker' | 'heavy' | 'captain';
 
 export enum EnemyState {
@@ -111,7 +113,7 @@ export interface PickupData extends VectorData {
 }
 
 export interface LevelData {
-  id: string;
+  id: LevelId;
   name: string;
   briefing: string;
   width: number;

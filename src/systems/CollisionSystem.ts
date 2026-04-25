@@ -70,7 +70,13 @@ export class CollisionSystem {
       physics.add.collider(this.world.grenades, this.world.doors, undefined, this.closedDoorProcess, this),
       physics.add.collider(this.world.grenades, this.world.propsGroup),
       physics.add.collider(this.world.projectiles, this.world.walls, this.projectileWallHit, undefined, this),
-      physics.add.collider(this.world.projectiles, this.world.doors, this.projectileDoorHit, this.closedDoorProcess, this),
+      physics.add.collider(
+        this.world.projectiles,
+        this.world.doors,
+        this.projectileDoorHit,
+        this.closedDoorProcess,
+        this
+      ),
       physics.add.collider(this.world.projectiles, this.world.propsGroup, this.projectilePropHit, undefined, this),
       physics.add.overlap(this.world.projectiles, this.world.enemies, this.projectileEnemyHit, undefined, this),
       physics.add.overlap(this.world.projectiles, this.world.player, this.projectilePlayerHit, undefined, this),
@@ -160,7 +166,12 @@ export class CollisionSystem {
     }
     const projectile = projectileObject;
     const enemy = enemyObject;
-    if (!projectile.active || enemy.dead || projectile.ownerTeam !== 'player' || projectile.hitActors.has(enemy.actorId)) {
+    if (
+      !projectile.active ||
+      enemy.dead ||
+      projectile.ownerTeam !== 'player' ||
+      projectile.hitActors.has(enemy.actorId)
+    ) {
       return;
     }
     projectile.hitActors.add(enemy.actorId);
@@ -293,11 +304,7 @@ export class CollisionSystem {
     }
   }
 
-  private segmentRectHit(
-    start: Phaser.Math.Vector2,
-    end: Phaser.Math.Vector2,
-    rect: RectData
-  ): SweepBase | undefined {
+  private segmentRectHit(start: Phaser.Math.Vector2, end: Phaser.Math.Vector2, rect: RectData): SweepBase | undefined {
     if (pointInRect(start, rect)) {
       return { t: 0, point: start.clone() };
     }
@@ -326,28 +333,17 @@ export class CollisionSystem {
     const t = this.segmentProgress(start, end, center);
     return {
       t,
-      point: new Phaser.Math.Vector2(
-        Phaser.Math.Linear(start.x, end.x, t),
-        Phaser.Math.Linear(start.y, end.y, t)
-      )
+      point: new Phaser.Math.Vector2(Phaser.Math.Linear(start.x, end.x, t), Phaser.Math.Linear(start.y, end.y, t))
     };
   }
 
-  private segmentProgress(
-    start: Phaser.Math.Vector2,
-    end: Phaser.Math.Vector2,
-    point: Phaser.Math.Vector2
-  ): number {
+  private segmentProgress(start: Phaser.Math.Vector2, end: Phaser.Math.Vector2, point: Phaser.Math.Vector2): number {
     const segmentX = end.x - start.x;
     const segmentY = end.y - start.y;
     const lengthSquared = segmentX * segmentX + segmentY * segmentY;
     if (lengthSquared <= 0.0001) {
       return 0;
     }
-    return Phaser.Math.Clamp(
-      ((point.x - start.x) * segmentX + (point.y - start.y) * segmentY) / lengthSquared,
-      0,
-      1
-    );
+    return Phaser.Math.Clamp(((point.x - start.x) * segmentX + (point.y - start.y) * segmentY) / lengthSquared, 0, 1);
   }
 }

@@ -49,18 +49,18 @@ export class WeaponSystem {
     this.fireProjectiles(player.actorId, 'player', definition, player.positionVector, target);
     this.applyRecoil(player, target, definition.recoil);
     this.world.effects.shake(definition.screenShake);
-    this.world.emitNoise(player.positionVector, definition.noiseRadius * player.noiseMultiplier, definition.noiseRadius > 500);
+    this.world.emitNoise(
+      player.positionVector,
+      definition.noiseRadius * player.noiseMultiplier,
+      definition.noiseRadius > 500
+    );
     this.world.audio.play(this.soundFor(definition));
     return true;
   }
 
   startReload(player: Player): boolean {
     const state = player.selectedWeapon;
-    if (
-      state.reloadRemaining > 0 ||
-      state.ammo >= state.definition.magazineSize ||
-      state.reserveAmmo <= 0
-    ) {
+    if (state.reloadRemaining > 0 || state.ammo >= state.definition.magazineSize || state.reserveAmmo <= 0) {
       return false;
     }
     state.reloadRemaining = state.definition.reloadTime;

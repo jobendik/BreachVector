@@ -11,8 +11,14 @@ export class WeaponPanel {
 
   constructor(private readonly scene: Phaser.Scene) {
     this.graphics = scene.add.graphics().setScrollFactor(0).setDepth(DEPTHS.ui);
-    this.label = scene.add.text(0, 0, '', this.textStyle(13, '#38bdf8')).setScrollFactor(0).setDepth(DEPTHS.ui + 1);
-    this.ammo = scene.add.text(0, 0, '', this.textStyle(28, '#f8fafc')).setScrollFactor(0).setDepth(DEPTHS.ui + 1);
+    this.label = scene.add
+      .text(0, 0, '', this.textStyle(13, '#38bdf8'))
+      .setScrollFactor(0)
+      .setDepth(DEPTHS.ui + 1);
+    this.ammo = scene.add
+      .text(0, 0, '', this.textStyle(28, '#f8fafc'))
+      .setScrollFactor(0)
+      .setDepth(DEPTHS.ui + 1);
   }
 
   layout(x: number, y: number, width: number, height: number): void {

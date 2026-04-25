@@ -28,14 +28,7 @@ export abstract class Actor extends Phaser.Physics.Arcade.Sprite {
   dead = false;
   lastDamageSource?: DamageSource;
 
-  protected constructor(
-    scene: Phaser.Scene,
-    x: number,
-    y: number,
-    textureKey: string,
-    team: Team,
-    stats: ActorStats
-  ) {
+  protected constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string, team: Team, stats: ActorStats) {
     super(scene, x, y, textureKey);
     this.actorId = Phaser.Utils.String.UUID();
     this.team = team;

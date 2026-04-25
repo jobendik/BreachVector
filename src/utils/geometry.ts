@@ -7,12 +7,7 @@ export function rectCenter(rect: RectData): Phaser.Math.Vector2 {
 }
 
 export function pointInRect(point: VectorData, rect: RectData): boolean {
-  return (
-    point.x >= rect.x &&
-    point.x <= rect.x + rect.w &&
-    point.y >= rect.y &&
-    point.y <= rect.y + rect.h
-  );
+  return point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h;
 }
 
 export function circleIntersectsRect(point: VectorData, radius: number, rect: RectData): boolean {
@@ -44,11 +39,7 @@ export function lineIntersection(
   return null;
 }
 
-export function rayRect(
-  a: Phaser.Math.Vector2,
-  b: Phaser.Math.Vector2,
-  rect: RectData
-): Phaser.Math.Vector2 | null {
+export function rayRect(a: Phaser.Math.Vector2, b: Phaser.Math.Vector2, rect: RectData): Phaser.Math.Vector2 | null {
   const corners = [
     new Phaser.Math.Vector2(rect.x, rect.y),
     new Phaser.Math.Vector2(rect.x + rect.w, rect.y),
@@ -79,11 +70,7 @@ export function rayRect(
   return best;
 }
 
-export function segmentClear(
-  a: Phaser.Math.Vector2,
-  b: Phaser.Math.Vector2,
-  blockers: RectData[]
-): boolean {
+export function segmentClear(a: Phaser.Math.Vector2, b: Phaser.Math.Vector2, blockers: RectData[]): boolean {
   return blockers.every((rect) => rayRect(a, b, rect) === null);
 }
 

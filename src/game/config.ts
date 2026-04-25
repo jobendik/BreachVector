@@ -9,8 +9,13 @@ import { PauseScene } from '../scenes/PauseScene';
 import { GameOverScene } from '../scenes/GameOverScene';
 import { VictoryScene } from '../scenes/VictoryScene';
 
+function rendererType(): typeof Phaser.AUTO | typeof Phaser.CANVAS {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('renderer') === 'canvas' ? Phaser.CANVAS : Phaser.AUTO;
+}
+
 export const gameConfig: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
+  type: rendererType(),
   parent: 'game',
   backgroundColor: '#020617',
   scale: {
@@ -31,14 +36,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     antialias: true,
     roundPixels: false
   },
-  scene: [
-    BootScene,
-    PreloadScene,
-    MenuScene,
-    GameScene,
-    UIScene,
-    PauseScene,
-    GameOverScene,
-    VictoryScene
-  ]
+  scene: [BootScene, PreloadScene, MenuScene, GameScene, UIScene, PauseScene, GameOverScene, VictoryScene]
 };

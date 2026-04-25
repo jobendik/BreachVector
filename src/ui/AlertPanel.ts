@@ -10,8 +10,14 @@ export class AlertPanel {
 
   constructor(private readonly scene: Phaser.Scene) {
     this.graphics = scene.add.graphics().setScrollFactor(0).setDepth(DEPTHS.ui);
-    this.title = scene.add.text(0, 0, '', this.textStyle(20, '#94a3b8')).setScrollFactor(0).setDepth(DEPTHS.ui + 1);
-    this.detail = scene.add.text(0, 0, '', this.textStyle(11, '#94a3b8')).setScrollFactor(0).setDepth(DEPTHS.ui + 1);
+    this.title = scene.add
+      .text(0, 0, '', this.textStyle(20, '#94a3b8'))
+      .setScrollFactor(0)
+      .setDepth(DEPTHS.ui + 1);
+    this.detail = scene.add
+      .text(0, 0, '', this.textStyle(11, '#94a3b8'))
+      .setScrollFactor(0)
+      .setDepth(DEPTHS.ui + 1);
   }
 
   layout(x: number, y: number, width: number, height: number): void {
@@ -31,7 +37,9 @@ export class AlertPanel {
     this.graphics.fillStyle(color, 0.9);
     this.graphics.fillRect(x, y, width, 4);
     this.title.setText(state.alertState.toUpperCase()).setColor(`#${color.toString(16).padStart(6, '0')}`);
-    this.detail.setText(state.debugEnabled ? `DEBUG ACTIVE - ${state.enemiesAlive} HOSTILES` : this.detailFor(state.alertState));
+    this.detail.setText(
+      state.debugEnabled ? `DEBUG ACTIVE - ${state.enemiesAlive} HOSTILES` : this.detailFor(state.alertState)
+    );
   }
 
   private detailFor(state: HudState['alertState']): string {

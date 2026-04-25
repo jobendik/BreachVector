@@ -84,8 +84,8 @@ The project already has a good file/folder structure. The next step is making th
 - [x] Expand `VisionWorld`, `CombatWorld`, `MissionWorld`, and related interfaces so systems receive explicit dependencies.
 - [x] Create typed event payloads for every game event.
 - [x] Replace loose string event names with a strongly typed event map.
-- [ ] Make enemy states a strict enum or const union with exhaustive handling.
-- [ ] Make weapon IDs, pickup IDs, enemy role IDs, and level IDs strict literal types.
+- [x] Make enemy states a strict enum or const union with exhaustive handling.
+- [x] Make weapon IDs, pickup IDs, enemy role IDs, and level IDs strict literal types.
 - [ ] Ensure `npm run typecheck` passes from a clean clone.
 
 ### 1.3 Lifecycle & Cleanup
@@ -97,7 +97,7 @@ The project already has a good file/folder structure. The next step is making th
 
 ### 1.4 Repository Professionalism
 - [x] Add ESLint + TypeScript ESLint with a practical ruleset.
-- [ ] Add Prettier or equivalent formatting config.
+- [x] Add Prettier or equivalent formatting config.
 - [x] Add `npm run lint`.
 - [x] Add `npm run check` that runs typecheck + lint + build.
 - [x] Add a GitHub Actions workflow that validates the project on push.
@@ -105,10 +105,10 @@ The project already has a good file/folder structure. The next step is making th
 - [ ] Add a clean issue template or TODO roadmap for future tasks.
 
 ### 1.5 Automated Smoke Testing
-- [ ] Add Playwright or Vitest browser smoke test that confirms the menu boots.
-- [ ] Add test that clicks Start and confirms GameScene + UIScene are active.
-- [ ] Add test that player can fire at least one projectile without runtime errors.
-- [ ] Add test that pause and restart do not duplicate scenes or event listeners.
+- [x] Add Playwright or Vitest browser smoke test that confirms the menu boots.
+- [x] Add test that clicks Start and confirms GameScene + UIScene are active.
+- [x] Add test that player can fire at least one projectile without runtime errors.
+- [x] Add test that pause and restart do not duplicate scenes or event listeners.
 - [ ] Add a small `debug/testLevel.ts` with predictable geometry for testing collisions and interactions.
 
 ---
@@ -159,7 +159,7 @@ The current generated placeholder style is useful, but the game needs a stronger
 - [ ] Implement a quality toggle for full lighting vs simplified lighting.
 
 ### 2.5 Camera & Composition
-- [ ] Add subtle camera look-ahead toward the cursor.
+- [x] Add subtle camera look-ahead toward the cursor.
 - [ ] Add smooth zoom when entering combat or using Rail Piercer.
 - [ ] Add cinematic camera snap/zoom on sector completion.
 - [ ] Add bounded camera dead-zone so movement feels stable but reactive.
@@ -173,19 +173,19 @@ The current generated placeholder style is useful, but the game needs a stronger
 Every player action should produce a readable, satisfying response.
 
 ### 3.1 Projectile FX
-- [ ] Add tracer trails with per-weapon colors and fading alpha.
+- [x] Add tracer trails with per-weapon colors and fading alpha.
 - [ ] Silenced Pistol gets small clean suppressed streaks.
 - [ ] Pulse Rifle gets bright cyan bullet streaks with small muzzle particles.
 - [ ] Scattergun gets multiple amber pellet trails and dust impacts.
 - [ ] Rail Piercer gets a thick violet-white beam trail with afterimage and screen flash.
-- [ ] Enemy bullets get red/orange hostile tracers so the player can read incoming fire.
-- [ ] Projectiles should spawn small impact sparks when hitting walls, doors, props, or armor.
+- [x] Enemy bullets get red/orange hostile tracers so the player can read incoming fire.
+- [x] Projectiles should spawn small impact sparks when hitting walls, doors, props, or armor.
 - [ ] Projectiles that hit shields/armor should produce blue-white ricochet sparks.
 
 ### 3.2 Muzzle, Impact & Hit Effects
-- [ ] Add directional cone muzzle flashes, not just circular flashes.
+- [x] Add directional cone muzzle flashes, not just circular flashes.
 - [ ] Add weapon-specific muzzle flash size and color.
-- [ ] Add hit markers at impact position.
+- [x] Add hit markers at impact position.
 - [ ] Add floating damage numbers with different tiers.
 - [ ] Add armor damage numbers in blue/white and health damage in red/orange.
 - [ ] Add enemy death bursts using enemy role color.
@@ -233,8 +233,8 @@ Game feel is what will make the project memorable when someone plays it for 60 s
 - [ ] Add accessibility option to reduce dash effects.
 
 ### 4.2 Weapon Feel
-- [ ] Add per-weapon recoil impulse.
-- [ ] Add per-weapon camera shake profiles.
+- [x] Add per-weapon recoil impulse.
+- [x] Add per-weapon camera shake profiles.
 - [ ] Add per-weapon muzzle flash scale and duration.
 - [ ] Add per-weapon reload rhythm and audio cue.
 - [ ] Add fire-mode feel: Pistol precise, Rifle steady, Scattergun punchy, Rail Piercer heavy and dramatic.
@@ -662,7 +662,7 @@ The game needs robust collision and hit detection to feel professional.
 - [ ] Ensure closed doors block movement and line-of-sight consistently.
 
 ### 12.3 Cover System
-- [ ] Add explicit cover points generated from walls/props.
+- [x] Add explicit cover points generated from walls/props.
 - [ ] Score cover based on line-of-sight break, distance, flank exposure, and enemy role.
 - [ ] Snipers prefer long-range cover.
 - [ ] Assault enemies prefer mid-range cover.
@@ -675,7 +675,7 @@ The game needs robust collision and hit detection to feel professional.
 - [ ] Add visible landing marker while aiming grenade.
 - [ ] Add fuse indicator on grenade sprite.
 - [ ] Add bounce sounds and reduced bounce energy.
-- [ ] Add explosion line-of-sight damage validation.
+- [x] Add explosion line-of-sight damage validation.
 - [ ] Add grenade warning indicator for player/enemies.
 
 ### 12.5 Pathfinding
@@ -1070,7 +1070,7 @@ These are not failures. They are professional roadmap items.
 
 - [ ] Placeholder art is not final.
 - [ ] Enemy navigation is not yet robust enough for complex maze-like layouts.
-- [ ] Projectile hit detection may need swept/raycast collision for high-speed shots.
+- [x] Projectile hit detection now uses swept collision for high-speed shots.
 - [ ] GameScene still owns too much orchestration.
 - [ ] There is no real progression loop yet.
 - [ ] There is no sector scoring yet.

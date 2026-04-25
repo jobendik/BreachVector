@@ -10,9 +10,17 @@ export class ObjectivePanel {
 
   constructor(private readonly scene: Phaser.Scene) {
     this.graphics = scene.add.graphics().setScrollFactor(0).setDepth(DEPTHS.ui);
-    this.title = scene.add.text(0, 0, 'OBJECTIVES', this.textStyle(13, '#34d399')).setScrollFactor(0).setDepth(DEPTHS.ui + 1);
+    this.title = scene.add
+      .text(0, 0, 'OBJECTIVES', this.textStyle(13, '#34d399'))
+      .setScrollFactor(0)
+      .setDepth(DEPTHS.ui + 1);
     for (let i = 0; i < 5; i += 1) {
-      this.lines.push(scene.add.text(0, 0, '', this.textStyle(12, '#cbd5e1')).setScrollFactor(0).setDepth(DEPTHS.ui + 1));
+      this.lines.push(
+        scene.add
+          .text(0, 0, '', this.textStyle(12, '#cbd5e1'))
+          .setScrollFactor(0)
+          .setDepth(DEPTHS.ui + 1)
+      );
     }
   }
 

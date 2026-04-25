@@ -41,12 +41,22 @@ export class Minimap {
 
     this.graphics.fillStyle(0x64748b, 0.78);
     for (const wall of this.snapshot.walls) {
-      this.graphics.fillRect(ox + wall.x * scale, oy + wall.y * scale, Math.max(1, wall.w * scale), Math.max(1, wall.h * scale));
+      this.graphics.fillRect(
+        ox + wall.x * scale,
+        oy + wall.y * scale,
+        Math.max(1, wall.w * scale),
+        Math.max(1, wall.h * scale)
+      );
     }
 
     for (const door of this.snapshot.doors) {
       this.graphics.fillStyle(door.open ? 0x22c55e : 0xf59e0b, door.open ? 0.55 : 0.85);
-      this.graphics.fillRect(ox + door.x * scale, oy + door.y * scale, Math.max(2, door.w * scale), Math.max(2, door.h * scale));
+      this.graphics.fillRect(
+        ox + door.x * scale,
+        oy + door.y * scale,
+        Math.max(2, door.w * scale),
+        Math.max(2, door.h * scale)
+      );
     }
 
     this.graphics.fillStyle(this.snapshot.canExtract ? 0x34d399 : 0x475569, 0.92);

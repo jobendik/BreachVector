@@ -33,7 +33,11 @@ export class AlertSystem {
     }
     this.state = next;
     const detail =
-      next === 'detected' ? missionText.alertDetected : next === 'searching' ? missionText.alertSearching : missionText.hidden;
+      next === 'detected'
+        ? missionText.alertDetected
+        : next === 'searching'
+          ? missionText.alertSearching
+          : missionText.hidden;
     eventBus.emit(GameEvents.AlertChanged, { state: next, detail });
     if (next !== 'hidden') {
       eventBus.emit(GameEvents.TacticalLog, { message: detail });

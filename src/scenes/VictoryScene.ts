@@ -25,7 +25,9 @@ export class VictoryScene extends Phaser.Scene {
       .text(
         width / 2,
         height / 2 - 38,
-        complete ? 'All blacksite sectors breached. Command network neutralized.' : 'Objective complete. Advance to the next sector.',
+        complete
+          ? 'All blacksite sectors breached. Command network neutralized.'
+          : 'Objective complete. Advance to the next sector.',
         {
           fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
           fontSize: '14px',
@@ -36,7 +38,9 @@ export class VictoryScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     if (!complete) {
-      this.button(width / 2, height / 2 + 54, 'NEXT SECTOR', () => this.scene.start('GameScene', { levelIndex: nextLevel }));
+      this.button(width / 2, height / 2 + 54, 'NEXT SECTOR', () =>
+        this.scene.start('GameScene', { levelIndex: nextLevel })
+      );
     }
     this.button(width / 2, height / 2 + (complete ? 54 : 112), 'RETURN TO MENU', () => this.scene.start('MenuScene'));
   }

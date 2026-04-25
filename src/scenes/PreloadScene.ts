@@ -36,7 +36,12 @@ export class PreloadScene extends Phaser.Scene {
     this.simpleCircle(TextureKeys.Muzzle, 30, 0xffffff);
   }
 
-  private withGraphics(key: string, width: number, height: number, draw: (g: Phaser.GameObjects.Graphics) => void): void {
+  private withGraphics(
+    key: string,
+    width: number,
+    height: number,
+    draw: (g: Phaser.GameObjects.Graphics) => void
+  ): void {
     if (this.textures.exists(key)) {
       return;
     }
@@ -46,14 +51,7 @@ export class PreloadScene extends Phaser.Scene {
     g.destroy();
   }
 
-  private actorTexture(
-    key: string,
-    fill: number,
-    outline: number,
-    player = false,
-    radius = 15,
-    captain = false
-  ): void {
+  private actorTexture(key: string, fill: number, outline: number, player = false, radius = 15, captain = false): void {
     this.withGraphics(key, 64, 64, (g) => {
       g.fillStyle(0x020617, 0);
       g.fillRect(0, 0, 64, 64);

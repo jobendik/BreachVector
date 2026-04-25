@@ -65,8 +65,7 @@ export class HUD {
     this.alert.update(state);
 
     this.prompt.setText(
-      state.interactionPrompt ||
-        'WASD move  |  Mouse aim  |  LMB fire  |  RMB grenade  |  E interact  |  Tab debug'
+      state.interactionPrompt || 'WASD move  |  Mouse aim  |  LMB fire  |  RMB grenade  |  E interact  |  Tab debug'
     );
 
     this.log.update(this.messages);

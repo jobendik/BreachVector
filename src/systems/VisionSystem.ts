@@ -16,11 +16,7 @@ export class VisionSystem {
   constructor(private readonly world: VisionWorld) {}
 
   blockerRects(): RectData[] {
-    return [
-      ...this.world.level.walls,
-      ...this.world.getClosedDoorRects(),
-      ...this.world.getSolidPropRects(true)
-    ];
+    return [...this.world.level.walls, ...this.world.getClosedDoorRects(), ...this.world.getSolidPropRects(true)];
   }
 
   hasLineOfSight(a: Phaser.Math.Vector2, b: Phaser.Math.Vector2): boolean {
@@ -89,8 +85,6 @@ export class VisionSystem {
       }
     }
 
-    return angles
-      .sort((a, b) => a - b)
-      .map((angle) => this.rayEnd(origin, angle, maxDistance));
+    return angles.sort((a, b) => a - b).map((angle) => this.rayEnd(origin, angle, maxDistance));
   }
 }

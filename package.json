@@ -10,14 +10,19 @@
     "preview": "vite preview --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "check": "npm run typecheck && npm run lint && npm run build"
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:smoke": "playwright test",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run build"
   },
   "dependencies": {
     "phaser": "^3.90.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "^20.12.12",
     "eslint": "^9.39.4",
+    "prettier": "^3.8.3",
     "typescript": "^5.4.5",
     "typescript-eslint": "^8.59.0",
     "vite": "^8.0.10"
