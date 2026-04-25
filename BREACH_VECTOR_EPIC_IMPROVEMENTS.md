@@ -8,6 +8,31 @@ The purpose is not to randomly add more features. The purpose is to turn a stron
 
 ---
 
+## CURRENT CODEBASE SNAPSHOT - 2026-04-26
+
+This roadmap has been reconciled against the current `src/` implementation. The game is a playable tactical prototype with strong architecture, generated procedural art, HUD panels, two data-driven sectors, swept projectile collision, A* enemy pathfinding, dynamic lighting, persistent settings, sector reports, and a gradual suspicion/detection model.
+
+Current roadmap completion by checklist count:
+
+| Status | Count | Share |
+|---|---:|---:|
+| Implemented | 200 | 32.4% |
+| Remaining | 417 | 67.6% |
+| Total tracked tasks | 617 | 100% |
+
+Interpretation: the project is roughly **32% complete against this full "portfolio gem" roadmap**, but closer to **60-65% complete for a defensible playable vertical-slice prototype** because the highest-risk foundation items are already in place. The largest remaining work is content polish, enemy/boss depth, progression/persistence, audio/music, accessibility completeness, README/demo media, and a perfect Sector 1 pass.
+
+Recent implemented highlights:
+
+- A* navigation with path smoothing and debug path overlay.
+- Gradual per-enemy suspicion meter with in-world bars and HUD awareness meter.
+- Swept projectile hit detection with smoke coverage for damage in both directions.
+- Dynamic light layer tuned as subtle floor/FX glow rather than screen-filling clouds.
+- Persistent settings scene for quality, volume, shake, flash, colorblind toggle, and reduced motion.
+- Sector clear/game-over reports with grade, stealth rating, kill breakdown, accuracy, and tactical advice.
+
+---
+
 ## ✅ PHASE 0 COMPLETED — Foundation From Single-File Prototype
 
 The project has already crossed the most important first threshold: it is no longer a disposable single-file experiment. It has been rebuilt as a modular Phaser + TypeScript project with scenes, systems, entities, data, UI, documentation, and a Vite build pipeline.
@@ -77,7 +102,7 @@ The project already has a good file/folder structure. The next step is making th
 - [x] Move extraction overlap and extraction state handling fully into `MissionSystem`.
 - [x] Move all interaction range logic into an `InteractionSystem`.
 - [x] Move debug drawing into a dedicated `DebugSystem`.
-- [ ] Keep `GameScene` focused on scene lifecycle, system orchestration, and level transitions.
+- [x] Keep `GameScene` focused on scene lifecycle, system orchestration, and level transitions.
 
 ### 1.2 Type Safety & Interfaces
 - [x] Remove all `unknown as` style casts from core systems.
@@ -91,7 +116,7 @@ The project already has a good file/folder structure. The next step is making th
 ### 1.3 Lifecycle & Cleanup
 - [x] Add explicit `destroy()` methods to systems that register events, timers, or scene listeners.
 - [x] Ensure UIScene unsubscribes from event bus listeners on shutdown.
-- [ ] Ensure GameScene fully resets projectiles, particles, enemies, minimap data, audio state, and mission state between sectors.
+- [x] Ensure GameScene fully resets projectiles, particles, enemies, minimap data, audio state, and mission state between sectors.
 - [x] Prevent duplicate scene listeners when restarting a sector.
 - [x] Add a `SceneCleanupChecklist.md` or document lifecycle ownership in `ARCHITECTURE.md`.
 
@@ -148,13 +173,13 @@ The current generated placeholder style is useful, but the game needs a stronger
 - [x] Make extraction zone feel like a real landing pad / breach corridor, not just a rectangle.
 
 ### 2.4 Lighting System
-- [ ] Add a dynamic light layer rendered with additive/screen blending.
-- [ ] Player flashlight/vision cone emits a soft green-cyan cone in stealth state.
-- [ ] Muzzle flashes emit brief weapon-colored light.
-- [ ] Explosions emit expanding orange light that fades over 0.3–0.6s.
-- [ ] Terminals emit cyan/green light depending on state.
-- [ ] Locked doors emit red light; unlocked doors emit blue or green.
-- [ ] Alert state activates red emergency strobes across the map.
+- [x] Add a dynamic light layer rendered with additive/screen blending.
+- [x] Player visibility/ambient layer emits a soft green-cyan tactical glow in stealth state.
+- [x] Muzzle flashes emit brief weapon-colored light.
+- [x] Explosions emit expanding orange light that fades over 0.3–0.6s.
+- [x] Terminals emit cyan/green light depending on state.
+- [x] Locked doors emit red light; unlocked doors emit blue or green.
+- [ ] Add controlled red emergency strobe accents during Detected without obscuring gameplay.
 - [ ] Low-health player state adds a subtle red vignette and heartbeat pulse.
 - [ ] Implement a quality toggle for full lighting vs simplified lighting.
 
@@ -260,9 +285,10 @@ Game feel is what will make the project memorable when someone plays it for 60 s
 ### 4.5 Feedback Clarity
 - [ ] Every failed interaction should explain why it failed: locked, too far, objective incomplete, no ammo, reloading.
 - [ ] Every objective update should create tactical log entry + HUD animation.
-- [ ] Every alert change should have sound + color + text feedback.
+- [x] Every alert change should have color + text feedback.
+- [ ] Add distinct sound feedback for every alert transition.
 - [ ] Enemy special actions should be telegraphed before they happen.
-- [ ] Player should never wonder why they died; add death recap later.
+- [x] Player death has a basic recap and tactical advice.
 
 ---
 
@@ -300,7 +326,7 @@ The HUD should look like a real tactical operator interface without becoming clu
 
 ### 5.4 Alert Panel
 - [x] Hidden, Searching, and Detected states exist.
-- [ ] Add alert meter showing how close enemies are to full detection.
+- [x] Add alert meter showing how close enemies are to full detection.
 - [x] Add state-specific animated border: cool scan, amber pulse, red emergency.
 - [ ] Add enemy awareness count: unaware / suspicious / engaged.
 - [ ] Add “last seen” timer when returning from Detected to Searching.
@@ -368,29 +394,29 @@ Menus are part of the portfolio impression. They should feel like a finished gam
 
 ### 6.4 Game Over Screen
 - [x] GameOver scene exists.
-- [ ] Add death recap: killed by enemy type / explosion / barrel / sniper.
-- [ ] Add stats: enemies killed, shots fired, accuracy, damage taken, objectives completed.
-- [ ] Add animated signal-loss effect.
-- [ ] Add restart, sector select, and menu options.
-- [ ] Add “tactical advice” based on cause of death.
+- [x] Add death recap: killed by enemy type / explosion / barrel / sniper.
+- [x] Add stats: enemies killed, shots fired, accuracy, damage taken, objectives completed.
+- [x] Add animated signal-loss effect.
+- [x] Add restart, sector select, and menu options.
+- [x] Add “tactical advice” based on cause of death.
 
 ### 6.5 Victory / Sector Clear Screen
 - [x] Victory/Sector clear flow exists.
-- [ ] Add sector clear grade: S/A/B/C based on time, damage taken, stealth, accuracy, objectives.
+- [x] Add sector clear grade: S/A/B/C based on time, damage taken, stealth, accuracy, objectives.
 - [ ] Add reward choice or upgrade choice after sector completion.
-- [ ] Add kill breakdown by weapon.
-- [ ] Add stealth rating: Silent / Compromised / Full Breach.
-- [ ] Add animated extraction ship/data uplink effect.
-- [ ] Add next sector preview.
+- [x] Add kill breakdown by weapon.
+- [x] Add stealth rating: Silent / Compromised / Full Breach.
+- [x] Add animated extraction ship/data uplink effect.
+- [x] Add next sector preview.
 
 ### 6.6 Settings Menu
-- [ ] Add settings scene or overlay.
-- [ ] Graphics quality: Low, Medium, High.
-- [ ] Audio sliders: Master, Music, SFX, UI.
-- [ ] Screen shake intensity.
-- [ ] Flash intensity.
-- [ ] Colorblind mode.
-- [ ] Reduce motion mode.
+- [x] Add settings scene or overlay.
+- [x] Graphics quality: Low, Medium, High.
+- [x] Audio sliders: Master, Music, SFX, UI.
+- [x] Screen shake intensity.
+- [x] Flash intensity.
+- [x] Colorblind mode.
+- [x] Reduce motion mode.
 - [ ] Keybinds later.
 
 ---
@@ -496,19 +522,19 @@ The current AI is functional. To become impressive, enemies need stronger naviga
 - [x] Patrol/search/attack/flank/cover/reload states exist.
 - [ ] Add an explicit perception memory model: seen player, heard noise, took damage, ally died, door opened.
 - [ ] Add state transition logging in debug mode.
-- [ ] Add suspicion meter per enemy rather than instant binary state.
+- [x] Add suspicion meter per enemy rather than instant binary state.
 - [ ] Add squad alert propagation: nearby enemies become suspicious when one enemy sees the player.
 - [ ] Add enemy morale or confidence modifiers for captain alive/dead.
 - [ ] Add AI update LOD so far-away enemies update at lower frequency.
 
 ### 9.2 Navigation & Pathfinding
-- [ ] Replace direct movement toward target with grid-based A* or navmesh-style waypoint navigation.
-- [ ] Generate navigation grid from level walls, doors, and props.
-- [ ] Recalculate paths when doors open or props are destroyed.
-- [ ] Add path smoothing so enemies do not look robotic.
+- [x] Replace direct movement toward target with grid-based A* or navmesh-style waypoint navigation.
+- [x] Generate navigation grid from level walls, doors, and props.
+- [x] Recalculate paths when doors open or props are destroyed.
+- [x] Add path smoothing so enemies do not look robotic.
 - [ ] Add local avoidance so enemies do not stack.
 - [ ] Add “unstuck” behavior if an enemy fails to progress.
-- [ ] Add debug overlay for current path and next waypoint.
+- [x] Add debug overlay for current path and next waypoint.
 
 ### 9.3 Enemy Roles
 - [ ] Assault enemies should push player position and use cover if available.
@@ -564,32 +590,33 @@ This is one of the game’s strongest identity hooks. It should become a definin
 - [ ] Add visibility quality setting.
 
 ### 10.2 Detection Model
-- [ ] Add enemy suspicion meter over time instead of instant detection.
-- [ ] Player sprinting/firing/hacking generates different noise levels.
+- [x] Add enemy suspicion meter over time instead of instant detection.
+- [x] Player firing, dashing, melee, slow-walking, and terminal completion generate different noise levels.
 - [ ] Corpses or destroyed props should increase suspicion if discovered.
 - [ ] Lights, cameras, or sensors should affect detection later.
-- [ ] Add “soft detection” state where enemies investigate but do not know exact position.
-- [ ] Add “hard detection” when line of sight is maintained long enough or player fires loud weapon.
+- [x] Add “soft detection” state where enemies investigate but do not know exact position.
+- [x] Add “hard detection” when line of sight is maintained long enough.
 
 ### 10.3 Noise System
-- [ ] Make every noisy action emit a visible debug noise radius.
-- [ ] Slow walk emits almost no noise.
-- [ ] Dash emits moderate noise.
-- [ ] Rifle/scattergun/rail piercer emit large noise pulses.
-- [ ] Grenades and barrels trigger global alert or sector-wide suspicion.
-- [ ] Doors opening and terminals hacking emit small local noise.
+- [x] Make major noisy actions emit visible noise rings.
+- [x] Slow walk emits almost no movement noise.
+- [x] Dash emits moderate noise.
+- [x] Rifle/scattergun/rail piercer emit large noise pulses.
+- [x] Grenades and barrels trigger large important noise events.
+- [x] Terminal completion emits local noise.
+- [ ] Doors opening emit small local noise.
 - [ ] Add environmental noise masking later: vents, machinery, alarm sirens.
 
 ### 10.4 Alert State Evolution
 - [ ] Hidden: low ambient tension, cool lighting, patrol behavior.
-- [ ] Suspicious: local enemy investigation, amber UI, partial emergency lights.
-- [ ] Searching: enemies move to last known position and sweep rooms.
-- [ ] Detected: red emergency lights, combat AI, minimap enemy pings.
+- [x] Suspicious: local enemy investigation and awareness meter.
+- [x] Searching: enemies move to last known position and sweep rooms.
+- [x] Detected: combat AI, red HUD/visibility treatment, and minimap enemy pings.
 - [ ] Lockdown: optional higher state where doors close and reinforcements arrive.
 - [ ] Add smooth transitions and audio cues between states.
 
 ### 10.5 Stealth Rewards
-- [ ] Add stealth score at end of sector.
+- [x] Add stealth rating at end of sector.
 - [ ] Add bonus for never triggering Detected.
 - [ ] Add bonus for silent takedowns.
 - [ ] Add bonus for avoiding civilian/neutral systems if added later.
@@ -630,14 +657,14 @@ The current mission loop is already better than “kill all enemies.” Build on
 - [ ] If player goes loud, spawn reinforcement wave but allow combat bonus rewards.
 
 ### 11.4 Mission Scoring
-- [ ] Track completion time.
-- [ ] Track damage taken.
-- [ ] Track shots fired and accuracy.
-- [ ] Track stealth state: never detected / briefly detected / full combat.
-- [ ] Track enemies killed vs bypassed.
-- [ ] Track optional objectives completed.
-- [ ] Generate rank: S, A, B, C.
-- [ ] Save best rank per sector.
+- [x] Track completion time.
+- [x] Track damage taken.
+- [x] Track shots fired and accuracy.
+- [x] Track stealth state: never detected / briefly detected / full combat.
+- [x] Track enemies killed vs bypassed.
+- [x] Track optional objectives completed.
+- [x] Generate rank: S, A, B, C.
+- [ ] Save best rank per sector to localStorage.
 
 ---
 
@@ -679,13 +706,13 @@ The game needs robust collision and hit detection to feel professional.
 - [ ] Add grenade warning indicator for player/enemies.
 
 ### 12.5 Pathfinding
-- [ ] Add walkability grid derived from level geometry.
-- [ ] Implement A* pathfinding for enemy navigation.
-- [ ] Cache paths where possible.
-- [ ] Rebuild/revalidate grid when doors open or props destroyed.
-- [ ] Add path smoothing.
+- [x] Add walkability grid derived from level geometry.
+- [x] Implement A* pathfinding for enemy navigation.
+- [x] Cache paths where possible (per-enemy with recompute interval).
+- [x] Rebuild/revalidate grid when doors open or props destroyed.
+- [x] Add path smoothing (LOS-based waypoint skipping).
 - [ ] Add local avoidance.
-- [ ] Consider EasyStar.js only if custom pathfinding becomes too much; otherwise implement lightweight A* internally.
+- [x] Implemented lightweight A* internally (no external library needed).
 
 ---
 
@@ -783,12 +810,12 @@ The game needs a polished vertical slice more than it needs endless unfinished l
 For a portfolio prototype, light progression is enough. It should add replay value without derailing scope.
 
 ### 15.1 Sector Scoring
-- [ ] Add sector score based on time, stealth, damage taken, objectives, accuracy, and style.
-- [ ] Add rank badges S/A/B/C.
+- [x] Add sector score/grade based on time, stealth, damage taken, objectives, accuracy, and style-adjacent stats.
+- [x] Add rank badges S/A/B/C.
 - [ ] Add best score saved to localStorage.
 - [ ] Add best stealth rank saved per sector.
 - [ ] Add best completion time saved per sector.
-- [ ] Add score summary screen after extraction.
+- [x] Add score summary screen after extraction.
 
 ### 15.2 Run Rewards
 - [ ] Add reward choice after sector completion.
@@ -850,7 +877,7 @@ Polish means the game remains smooth and stable as effects increase.
 - [ ] Add `docs/screenshots` and `docs/gifs` folders.
 
 ### 16.5 Save / Load
-- [ ] Save settings to localStorage.
+- [x] Save settings to localStorage.
 - [ ] Save best scores/ranks to localStorage.
 - [ ] Save completed sectors.
 - [ ] Add reset progress button.
@@ -865,9 +892,9 @@ Accessibility also makes the project look more professional.
 ### 17.1 Visual Accessibility
 - [ ] Colorblind mode: distinguish enemies/weapons/objectives with shape and icon differences.
 - [ ] High contrast mode.
-- [ ] Reduce motion mode.
-- [ ] Screen shake slider.
-- [ ] Flash intensity slider.
+- [x] Reduce motion mode.
+- [x] Screen shake slider.
+- [x] Flash intensity slider.
 - [ ] UI scale options.
 - [ ] Minimap scale options.
 - [ ] Persistent objective text clarity.
@@ -882,7 +909,7 @@ Accessibility also makes the project look more professional.
 
 ### 17.3 Audio Accessibility
 - [ ] Subtitles or event captions for important sounds: ALARM, SNIPER AIMING, GRENADE, DOOR UNLOCKED.
-- [ ] Separate sliders for Master, Music, SFX, UI.
+- [x] Separate sliders for Master, Music, SFX, UI.
 - [ ] Visual alert cues for players who mute audio.
 - [ ] Optional reduced harsh-sound mode.
 
@@ -1007,13 +1034,13 @@ This section is critical. The repository should communicate professionalism befo
 If development time is limited, prioritize these. They will produce the strongest portfolio impact.
 
 1. Make Sector 1 a polished vertical slice with perfect pacing.
-2. Add dynamic lighting and alert-state color grading.
-3. Replace simple generated shapes with multi-part procedural sprites.
-4. Add reliable projectile raycast/sweep collision.
-5. Add enemy pathfinding and debug path overlay.
-6. Add suspicion meter instead of binary detection.
+2. Add dynamic lighting and alert-state color grading. **Status: partial/implemented foundation.**
+3. Replace simple generated shapes with multi-part procedural sprites. **Status: implemented for placeholders.**
+4. Add reliable projectile raycast/sweep collision. **Status: implemented.**
+5. Add enemy pathfinding and debug path overlay. **Status: implemented.**
+6. Add suspicion meter instead of binary detection. **Status: implemented.**
 7. Add captain boss presentation and unique abilities.
-8. Add weapon-specific recoil, trails, muzzle flashes, and sound.
+8. Add weapon-specific recoil, trails, muzzle flashes, and sound. **Status: partial.**
 9. Add grenade landing marker and improved explosion effects.
 10. Add end-of-sector ranking screen.
 11. Add reward/upgrade choice screen after sector clear.
@@ -1069,11 +1096,12 @@ One polished 8–12 minute sector that demonstrates:
 These are not failures. They are professional roadmap items.
 
 - [ ] Placeholder art is not final.
-- [ ] Enemy navigation is not yet robust enough for complex maze-like layouts.
+- [x] Enemy navigation now uses A* pathfinding with LOS-based path smoothing.
 - [x] Projectile hit detection now uses swept collision for high-speed shots.
-- [ ] GameScene still owns too much orchestration.
-- [ ] There is no real progression loop yet.
-- [ ] There is no sector scoring yet.
+- [x] Per-enemy suspicion now gates initial detection instead of instant binary spotting.
+- [x] Persistent settings exist for audio, graphics quality, motion, shake, flash, and colorblind toggle.
+- [ ] There is no real progression loop yet (run rewards, sector unlocks).
+- [ ] Sector scoring exists but best-rank persistence to localStorage is not implemented.
 - [ ] There is no live demo link yet.
 - [ ] There are no screenshots/GIFs yet.
 - [ ] Accessibility/settings are not yet complete.
@@ -1082,6 +1110,6 @@ These are not failures. They are professional roadmap items.
 
 ## DOCUMENT VERSION
 
-*Document version: 1.0 — 2026-04-25*  
+*Document version: 1.3 — 2026-04-26 (roadmap reconciled with suspicion, scoring, settings, lighting, and projectile fixes)*
 *Target project: BREACH VECTOR: BLACKSITE*  
-*Estimated improvement items: 250+ discrete tasks across 18 categories.*
+*Estimated improvement items: 617 tracked checklist tasks across 18 categories; 200 currently implemented (32.4%).*

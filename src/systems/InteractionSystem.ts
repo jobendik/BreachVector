@@ -32,6 +32,7 @@ interface InteractionWorld {
   };
   emitNoise(point: Phaser.Math.Vector2, radius: number, important?: boolean): void;
   log(message: string): void;
+  onDoorOpened?(): void;
 }
 
 export class InteractionSystem {
@@ -97,6 +98,7 @@ export class InteractionSystem {
     for (const matchingDoor of this.world.doors.filter((door) => door.doorId === terminal.terminalId)) {
       matchingDoor.unlock();
       matchingDoor.openDoor();
+      this.world.onDoorOpened?.();
     }
     this.world.emitNoise(new Phaser.Math.Vector2(terminal.x, terminal.y), 260, true);
   }
@@ -113,6 +115,7 @@ export class InteractionSystem {
 
     door.openDoor();
     this.world.audio.play('interact');
+    this.world.onDoorOpened?.();
     this.world.log(`Door ${door.doorId.toUpperCase()} opened`);
   }
 

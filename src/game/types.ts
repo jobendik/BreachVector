@@ -156,6 +156,7 @@ export interface HudState {
   reloading: boolean;
   reloadRatio: number;
   alertState: AlertState;
+  enemySuspicion: number;
   objectives: MissionObjective[];
   interactionKind: 'none' | 'terminal' | 'door' | 'extraction';
   interactionPrompt: string;
@@ -200,4 +201,27 @@ export interface DamageSource {
   team: Team;
   label: string;
   position?: VectorData;
+}
+
+export type SectorGrade = 'S' | 'A' | 'B' | 'C';
+
+export type StealthRating = 'Silent' | 'Compromised' | 'Full Breach';
+
+export interface SectorReport {
+  levelIndex: number;
+  levelName: string;
+  completionTimeSeconds: number;
+  enemiesKilled: number;
+  enemiesTotal: number;
+  shotsFired: number;
+  shotsHit: number;
+  accuracy: number;
+  damageTaken: number;
+  objectivesCompleted: number;
+  objectivesTotal: number;
+  stealthRating: StealthRating;
+  grade: SectorGrade;
+  killBreakdown: Record<string, number>;
+  deathCause?: string;
+  tacticalAdvice?: string;
 }

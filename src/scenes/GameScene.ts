@@ -3,7 +3,16 @@ import { levels, getLevel } from '../data/levels';
 import { missionText } from '../data/missionText';
 import { DEPTHS, PLAYER_BALANCE } from '../game/constants';
 import { GameEvents, eventBus } from '../game/events';
-import type { HudState, LevelData, PickupType, RectData } from '../game/types';
+import type {
+  AlertState,
+  HudState,
+  LevelData,
+  PickupType,
+  RectData,
+  SectorGrade,
+  SectorReport,
+  StealthRating
+} from '../game/types';
 import { Door } from '../entities/Door';
 import { Enemy } from '../entities/Enemy';
 import type { ExtractionZone } from '../entities/ExtractionZone';
@@ -24,8 +33,10 @@ import { EffectsSystem } from '../systems/EffectsSystem';
 import { EnemyAISystem } from '../systems/EnemyAISystem';
 import { InputSystem } from '../systems/InputSystem';
 import { InteractionSystem, type InteractionStatus } from '../systems/InteractionSystem';
+import { LightingSystem, type SteadyLight } from '../systems/LightingSystem';
 import { MinimapSystem } from '../systems/MinimapSystem';
 import { MissionSystem } from '../systems/MissionSystem';
+import { PathfindingSystem } from '../systems/PathfindingSystem';
 import { VisionSystem } from '../systems/VisionSystem';
 import { WeaponSystem } from '../systems/WeaponSystem';
 
@@ -52,6 +63,8 @@ export class GameScene extends Phaser.Scene {
 
   effects!: EffectsSystem;
   audio!: AudioSystem;
+  lighting!: LightingSystem;
+  pathfinding!: PathfindingSystem;
   inputSystem!: InputSystem;
   weapons!: WeaponSystem;
   combat!: CombatSystem;
@@ -70,6 +83,14 @@ export class GameScene extends Phaser.Scene {
   private tacticalLog: string[] = [];
   private minimapTimer = 0;
   private sectorEnding = false;
+  private sectorStartTime = 0;
+  private enemiesTotal = 0;
+  private enemiesKilled = 0;
+  private shotsFired = 0;
+  private shotsHit = 0;
+  private damageTaken = 0;
+  private highestAlertState: AlertState = 'hidden';
+  private killBreakdown: Record<string, number> = {};
 
   constructor() {
     super('GameScene');
@@ -82,6 +103,14 @@ export class GameScene extends Phaser.Scene {
     this.sectorEnding = false;
     this.tacticalLog = [];
     this.interactionStatus = { kind: 'none', prompt: '', progress: 0 };
+    this.sectorStartTime = this.time.now;
+    this.enemiesTotal = 0;
+    this.enemiesKilled = 0;
+    this.shotsFired = 0;
+    this.shotsHit = 0;
+    this.damageTaken = 0;
+    this.highestAlertState = 'hidden';
+    this.killBreakdown = {};
 
     this.physics.world.setBounds(0, 0, this.level.width, this.level.height);
     this.cameras.main.setBounds(0, 0, this.level.width, this.level.height);
@@ -90,6 +119,7 @@ export class GameScene extends Phaser.Scene {
     this.createGroups();
     this.renderEnvironment();
     this.buildLevelEntities();
+    this.enemiesTotal = this.enemyEntities.length;
     this.createSystems();
     this.collisions.setup();
 
@@ -149,12 +179,16 @@ export class GameScene extends Phaser.Scene {
       this.weapons.startReload(this.player);
     }
 
-    this.weapons.tryFirePlayer(
-      this.player,
-      pointerWorld,
-      this.inputSystem.primaryHeld(),
-      this.inputSystem.consumePrimaryPressed()
-    );
+    if (
+      this.weapons.tryFirePlayer(
+        this.player,
+        pointerWorld,
+        this.inputSystem.primaryHeld(),
+        this.inputSystem.consumePrimaryPressed()
+      )
+    ) {
+      this.shotsFired += 1;
+    }
 
     if (this.inputSystem.consumeSecondaryPressed()) {
       this.weapons.throwGrenade(this.player, pointerWorld);
@@ -167,10 +201,13 @@ export class GameScene extends Phaser.Scene {
     this.interactionStatus = this.interaction.update(deltaSeconds);
     this.enemyAI.update(deltaSeconds, this.debug.enabled);
     this.debug.drawEnemyOverlay(this.enemyEntities);
+    this.debug.drawSuspicionIndicators(this.enemyEntities);
     this.updateProjectiles(deltaSeconds);
     this.updateGrenades(deltaSeconds);
     this.alert.update(deltaSeconds);
+    this.trackAlertState();
     this.updateVisibility(time / 1000);
+    this.updateLighting(deltaSeconds, time / 1000);
     this.updateCameraAim(pointerWorld);
     this.mission.updateExtraction(time / 1000);
     this.cleanupInactiveEntities();
@@ -180,11 +217,13 @@ export class GameScene extends Phaser.Scene {
 
   spawnProjectile(projectile: Projectile): void {
     this.projectileGroup.add(projectile);
+    projectile.launch();
     this.projectileEntities.push(projectile);
   }
 
   spawnGrenade(grenade: Grenade): void {
     this.grenadeGroup.add(grenade);
+    grenade.launch();
     this.grenadeEntities.push(grenade);
   }
 
@@ -230,6 +269,9 @@ export class GameScene extends Phaser.Scene {
 
   onEnemyKilled(enemy: Enemy): void {
     this.log(`${enemy.config.displayName} neutralized`);
+    this.enemiesKilled += 1;
+    const sourceLabel = enemy.lastDamageSource?.label ?? 'Unknown';
+    this.killBreakdown[sourceLabel] = (this.killBreakdown[sourceLabel] ?? 0) + 1;
     if (enemy.role === 'captain') {
       this.mission.commandTargetKilled();
     }
@@ -244,9 +286,10 @@ export class GameScene extends Phaser.Scene {
     }
     this.sectorEnding = true;
     this.log(missionText.gameOver);
+    const report = this.createSectorReport(this.player.lastDamageSource);
     this.time.delayedCall(650, () => {
       this.scene.stop('UIScene');
-      this.scene.start('GameOverScene', { levelIndex: this.levelIndex });
+      this.scene.start('GameOverScene', { levelIndex: this.levelIndex, report });
     });
   }
 
@@ -298,7 +341,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createSystems(): void {
-    this.effects = new EffectsSystem(this);
+    this.pathfinding = new PathfindingSystem();
+    this.pathfinding.buildFromLevel(this.level);
+    this.pathfinding.applyDoors(this.getClosedDoorRects());
+
+    this.lighting = new LightingSystem(this);
+    this.effects = new EffectsSystem(this, this.lighting);
     this.audio = new AudioSystem();
     this.inputSystem = new InputSystem(this);
     this.alert = new AlertSystem();
@@ -332,6 +380,12 @@ export class GameScene extends Phaser.Scene {
       hasLineOfSight: (a, b) => this.hasLineOfSight(a, b),
       onEnemyKilled: (enemy) => this.onEnemyKilled(enemy),
       onPlayerKilled: () => this.onPlayerKilled(),
+      onPlayerDamage: (amount) => {
+        this.damageTaken += amount;
+      },
+      onPlayerHitConfirmed: () => {
+        this.shotsHit += 1;
+      },
       emitNoise: (point, radius, important) => this.emitNoise(point, radius, important)
     });
 
@@ -345,7 +399,8 @@ export class GameScene extends Phaser.Scene {
       audio: this.audio,
       effects: this.effects,
       emitNoise: (point, radius, important) => this.emitNoise(point, radius, important),
-      log: (message) => this.log(message)
+      log: (message) => this.log(message),
+      onDoorOpened: () => this.pathfinding.applyDoors(this.getClosedDoorRects())
     });
 
     this.enemyAI = new EnemyAISystem({
@@ -354,7 +409,8 @@ export class GameScene extends Phaser.Scene {
       coverPoints: this.coverPoints,
       vision: this.vision,
       alert: this.alert,
-      weapons: this.weapons
+      weapons: this.weapons,
+      pathfinding: this.pathfinding
     });
 
     this.collisions = new CollisionSystem({
@@ -431,7 +487,7 @@ export class GameScene extends Phaser.Scene {
     this.visibilityGraphics.clear();
     const detected = this.alert.state === 'detected';
     if (detected) {
-      this.visibilityGraphics.fillStyle(0xef4444, 0.1);
+      this.visibilityGraphics.fillStyle(0xef4444, 0.055);
       this.visibilityGraphics.fillRect(0, 0, this.level.width, this.level.height);
       for (const enemy of this.enemyEntities) {
         enemy.setAlpha(enemy.dead ? 0 : 1);
@@ -468,6 +524,52 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private updateLighting(deltaSeconds: number, timeSeconds: number): void {
+    const lights: SteadyLight[] = [];
+    const alertState = this.alert.state;
+
+    // Player ambient light — color shifts with alert state
+    const playerColor = alertState === 'detected' ? 0xef4444 : alertState === 'searching' ? 0xf59e0b : 0x10b981;
+    lights.push({ x: this.player.x, y: this.player.y, radius: 92, color: playerColor, intensity: 0.18 });
+
+    // Terminal lights
+    for (const terminal of this.terminalEntities) {
+      if (terminal.hacked) {
+        lights.push({ x: terminal.x, y: terminal.y, radius: 38, color: 0x10b981, intensity: 0.18 });
+      } else {
+        lights.push({ x: terminal.x, y: terminal.y, radius: 46, color: 0x38bdf8, intensity: 0.22, pulseHz: 1.2 });
+      }
+    }
+
+    // Door lights — red for locked, green for unlocked
+    for (const door of this.doorEntities) {
+      if (!door.open) {
+        const cx = door.rect.x + door.rect.w / 2;
+        const cy = door.rect.y + door.rect.h / 2;
+        if (door.locked) {
+          lights.push({ x: cx, y: cy, radius: 34, color: 0xef4444, intensity: 0.16, pulseHz: 0.8 });
+        } else {
+          lights.push({ x: cx, y: cy, radius: 30, color: 0x10b981, intensity: 0.14 });
+        }
+      }
+    }
+
+    // Extraction zone — bright green pulse when mission ready
+    if (this.mission.canExtract()) {
+      const ez = this.level.extraction;
+      lights.push({
+        x: ez.x + ez.w / 2,
+        y: ez.y + ez.h / 2,
+        radius: 72,
+        color: 0x4ade80,
+        intensity: 0.24,
+        pulseHz: 1.6
+      });
+    }
+
+    this.lighting.update(lights, deltaSeconds, timeSeconds);
+  }
+
   private updateCameraAim(pointerWorld: Phaser.Math.Vector2): void {
     const offset = pointerWorld.subtract(this.player.positionVector).scale(0.16);
     this.cameras.main.setFollowOffset(-offset.x, -offset.y);
@@ -501,6 +603,7 @@ export class GameScene extends Phaser.Scene {
       reloading: weaponState.reloadRemaining > 0,
       reloadRatio,
       alertState: this.alert.state,
+      enemySuspicion: Math.max(0, ...this.enemyEntities.filter((enemy) => !enemy.dead).map((enemy) => enemy.suspicion)),
       objectives: this.mission.objectives(),
       interactionKind: this.interactionStatus.kind,
       interactionPrompt: this.interactionStatus.prompt,
@@ -565,15 +668,95 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.sectorEnding = true;
+    const report = this.createSectorReport();
     this.time.delayedCall(650, () => {
       this.scene.stop('UIScene');
-      this.scene.start('VictoryScene', { levelIndex: this.levelIndex });
+      this.scene.start('VictoryScene', { levelIndex: this.levelIndex, report });
     });
+  }
+
+  private trackAlertState(): void {
+    if (this.highestAlertState === 'detected') {
+      return;
+    }
+    if (this.alert.state === 'detected' || (this.alert.state === 'searching' && this.highestAlertState === 'hidden')) {
+      this.highestAlertState = this.alert.state;
+    }
+  }
+
+  private createSectorReport(deathSource?: { label: string }): SectorReport {
+    const objectives = this.mission.objectives();
+    const completionTimeSeconds = Math.max(0, (this.time.now - this.sectorStartTime) / 1000);
+    const accuracy = this.shotsFired > 0 ? this.shotsHit / this.shotsFired : 1;
+    const stealthRating = this.stealthRating();
+    const deathCause = deathSource?.label;
+    return {
+      levelIndex: this.levelIndex,
+      levelName: this.level.name,
+      completionTimeSeconds,
+      enemiesKilled: this.enemiesKilled,
+      enemiesTotal: this.enemiesTotal,
+      shotsFired: this.shotsFired,
+      shotsHit: this.shotsHit,
+      accuracy,
+      damageTaken: this.damageTaken,
+      objectivesCompleted: objectives.filter((objective) => objective.completed).length,
+      objectivesTotal: objectives.length,
+      stealthRating,
+      grade: this.gradeSector(completionTimeSeconds, accuracy, stealthRating),
+      killBreakdown: { ...this.killBreakdown },
+      deathCause,
+      tacticalAdvice: deathCause ? this.tacticalAdvice(deathCause) : undefined
+    };
+  }
+
+  private stealthRating(): StealthRating {
+    if (this.highestAlertState === 'detected') {
+      return 'Full Breach';
+    }
+    if (this.highestAlertState === 'searching') {
+      return 'Compromised';
+    }
+    return 'Silent';
+  }
+
+  private gradeSector(timeSeconds: number, accuracy: number, stealthRating: StealthRating): SectorGrade {
+    let score = 100;
+    score -= Math.min(30, timeSeconds / 18);
+    score -= Math.min(30, this.damageTaken / 8);
+    score += Math.min(12, accuracy * 12);
+    if (stealthRating === 'Compromised') {
+      score -= 12;
+    } else if (stealthRating === 'Full Breach') {
+      score -= 24;
+    }
+    if (score >= 88) return 'S';
+    if (score >= 74) return 'A';
+    if (score >= 58) return 'B';
+    return 'C';
+  }
+
+  private tacticalAdvice(cause: string): string {
+    const normalized = cause.toLowerCase();
+    if (normalized.includes('explosion')) {
+      return 'Keep blast doors, barrels, and grenade arcs out of your retreat path.';
+    }
+    if (normalized.includes('sniper')) {
+      return 'Break long sightlines before reloading or hacking exposed terminals.';
+    }
+    if (normalized.includes('heavy')) {
+      return 'Use cover and explosives before trading with armored targets.';
+    }
+    if (normalized.includes('flanker')) {
+      return 'Watch side corridors after loud shots; flankers punish tunnel vision.';
+    }
+    return 'Slow-walk into contact, clear angles, and avoid fighting from the open.';
   }
 
   private cleanupScene(): void {
     this.scene.stop('UIScene');
     this.debug?.destroy();
+    this.lighting?.destroy();
     this.collisions?.destroy();
     this.inputSystem?.destroy();
     this.audio?.destroy();

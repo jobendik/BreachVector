@@ -23,6 +23,8 @@ interface CombatWorld {
   hasLineOfSight(a: Phaser.Math.Vector2, b: Phaser.Math.Vector2): boolean;
   onEnemyKilled(enemy: Enemy): void;
   onPlayerKilled(): void;
+  onPlayerDamage(amount: number): void;
+  onPlayerHitConfirmed(): void;
   emitNoise(point: Phaser.Math.Vector2, radius: number, important?: boolean): void;
 }
 
@@ -38,6 +40,12 @@ export class CombatSystem {
     this.world.effects.floatingText(actor.x, actor.y - 22, `${Math.ceil(result.appliedHealthDamage)}`, damageColor);
     this.world.effects.hit(actor.x, actor.y, damageColor);
     this.world.audio.play('hit');
+
+    if (actor.team === 'player') {
+      this.world.onPlayerDamage(result.appliedHealthDamage + result.absorbedArmor);
+    } else if (source.team === 'player') {
+      this.world.onPlayerHitConfirmed();
+    }
 
     if (result.killed) {
       this.world.effects.explosion(actor.x, actor.y, actor.team === 'player' ? 0xef4444 : 0xf97316, 0.65);

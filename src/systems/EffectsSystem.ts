@@ -4,17 +4,24 @@ import { FloatingText } from '../effects/FloatingText';
 import { HitMarker } from '../effects/HitMarker';
 import { MuzzleFlash } from '../effects/MuzzleFlash';
 import { TextureKeys } from '../game/constants';
+import { loadSettings } from '../game/settings';
+import type { LightingSystem } from './LightingSystem';
 import { cssColor } from '../utils/colors';
 
 export class EffectsSystem {
-  constructor(private readonly scene: Phaser.Scene) {}
+  constructor(
+    private readonly scene: Phaser.Scene,
+    private readonly lighting?: LightingSystem
+  ) {}
 
   muzzleFlash(x: number, y: number, angle: number, color: number): void {
     new MuzzleFlash(this.scene, x, y, angle, color);
+    this.lighting?.addTransient(x, y, 72, color, 1.1, 0.1);
   }
 
   explosion(x: number, y: number, color = 0xf97316, scale = 1): void {
     ExplosionEffect.spawn(this.scene, x, y, color, scale);
+    this.lighting?.addTransient(x, y, 200 * scale, color, 1.4, 0.5);
   }
 
   hit(x: number, y: number, color = 0xe5eefb): void {
@@ -51,6 +58,10 @@ export class EffectsSystem {
   }
 
   shake(intensity: number): void {
-    this.scene.cameras.main.shake(95, Phaser.Math.Clamp(intensity / 100, 0.002, 0.016));
+    const settings = loadSettings();
+    if (settings.reduceMotion || settings.screenShake <= 0) {
+      return;
+    }
+    this.scene.cameras.main.shake(95, Phaser.Math.Clamp((intensity / 100) * settings.screenShake, 0.002, 0.016));
   }
 }

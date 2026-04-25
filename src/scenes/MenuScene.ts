@@ -32,8 +32,8 @@ export class MenuScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor(COLORS.blacksiteNavy);
-    this.backdrop = this.add.graphics();
-    this.panelGraphics = this.add.graphics();
+    this.backdrop = this.add.graphics().setDepth(-20);
+    this.panelGraphics = this.add.graphics().setDepth(-10);
 
     this.createTitle();
     this.createPanelText();
@@ -62,10 +62,12 @@ export class MenuScene extends Phaser.Scene {
   private createTitle(): void {
     this.titleGhost = this.add
       .text(0, 0, GAME_TITLE, this.textStyle(48, cssColor(COLORS.alertRed), '900'))
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setDepth(2);
     this.title = this.add
       .text(0, 0, GAME_TITLE, this.textStyle(48, cssColor(COLORS.operatorGreenBright), '900'))
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setDepth(3);
     this.subtitle = this.add
       .text(
         0,
@@ -73,24 +75,31 @@ export class MenuScene extends Phaser.Scene {
         'TACTICAL BREACH PROTOTYPE / GENERATED BLACKSITE BUILD',
         this.textStyle(14, cssColor(COLORS.systemCyanSoft), '700')
       )
-      .setOrigin(0.5);
-    this.footer = this.add.text(0, 0, '', this.textStyle(11, cssColor(COLORS.steelLight), '700')).setOrigin(0.5);
+      .setOrigin(0.5)
+      .setDepth(3);
+    this.footer = this.add
+      .text(0, 0, '', this.textStyle(11, cssColor(COLORS.steelLight), '700'))
+      .setOrigin(0.5)
+      .setDepth(3);
   }
 
   private createPanelText(): void {
-    this.panelTitle = this.add.text(0, 0, '', this.textStyle(15, cssColor(COLORS.operatorGreenBright), '900'));
+    this.panelTitle = this.add
+      .text(0, 0, '', this.textStyle(15, cssColor(COLORS.operatorGreenBright), '900'))
+      .setDepth(3);
     this.panelBody = this.add.text(0, 0, '', {
       ...this.textStyle(13, cssColor(COLORS.textMuted), '700'),
       lineSpacing: 8,
       wordWrap: { width: 520 }
     });
+    this.panelBody.setDepth(3);
   }
 
   private createButtons(): void {
     this.buttons = [
       this.button('START OPERATION', () => this.startOperation(), COLORS.operatorGreenBright, COLORS.blacksiteNavy),
       this.button('CONTROLS', () => this.setPanel('controls'), COLORS.systemCyan, COLORS.textPrimary),
-      this.button('SETTINGS', () => this.setPanel('settings'), COLORS.hazardAmberBright, COLORS.textPrimary),
+      this.button('SETTINGS', () => this.scene.launch('SettingsScene'), COLORS.hazardAmberBright, COLORS.textPrimary),
       this.button('CREDITS', () => this.setPanel('credits'), COLORS.energyVioletBright, COLORS.textPrimary)
     ];
   }
@@ -247,8 +256,14 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private button(label: string, onClick: () => void, accent: number, textColor: number): MenuButton {
-    const bg = this.add.rectangle(0, 0, 10, 10, COLORS.blacksitePanelLight, 0.94).setStrokeStyle(2, accent, 0.56);
-    const text = this.add.text(0, 0, label, this.textStyle(13, cssColor(textColor), '900')).setOrigin(0.5);
+    const bg = this.add
+      .rectangle(0, 0, 10, 10, COLORS.blacksitePanelLight, 0.94)
+      .setStrokeStyle(2, accent, 0.56)
+      .setDepth(1);
+    const text = this.add
+      .text(0, 0, label, this.textStyle(13, cssColor(textColor), '900'))
+      .setOrigin(0.5)
+      .setDepth(2);
     bg.setInteractive({ useHandCursor: true });
     bg.on('pointerover', () => {
       bg.setFillStyle(accent, 0.92);
@@ -289,13 +304,22 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private textStyle(size: number, color: string, weight: string): Phaser.Types.GameObjects.Text.TextStyle {
+    const bold = Number(weight) >= 700;
     return {
-      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+      fontFamily: 'Consolas, Menlo, monospace',
       fontSize: `${size}px`,
-      fontStyle: weight,
+      fontStyle: bold ? 'bold' : 'normal',
       color,
-      stroke: size > 30 ? cssColor(COLORS.blacksiteNavy) : undefined,
-      strokeThickness: size > 30 ? 8 : undefined
+      stroke: cssColor(COLORS.blacksiteNavy),
+      strokeThickness: size > 30 ? 8 : 2,
+      shadow: {
+        offsetX: 0,
+        offsetY: 1,
+        color: cssColor(COLORS.black),
+        blur: size > 30 ? 8 : 3,
+        fill: true,
+        stroke: true
+      }
     };
   }
 }

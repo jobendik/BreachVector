@@ -27,6 +27,7 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
   readonly sourceLabel: string;
   readonly hitActors = new Set<string>();
   readonly hitProps = new Set<Prop>();
+  private readonly launchVelocity: Phaser.Math.Vector2;
   pierceRemaining: number;
   lifetime = WORLD_BALANCE.projectileLifetime;
   previousPosition: Phaser.Math.Vector2;
@@ -41,13 +42,17 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     this.tracerWidth = config.tracerWidth;
     this.sourceLabel = config.sourceLabel;
     this.previousPosition = new Phaser.Math.Vector2(config.x, config.y);
+    this.launchVelocity = new Phaser.Math.Vector2(
+      Math.cos(config.angle) * config.speed,
+      Math.sin(config.angle) * config.speed
+    );
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
     body.setSize(10, 6);
-    body.setVelocity(Math.cos(config.angle) * config.speed, Math.sin(config.angle) * config.speed);
+    body.setVelocity(this.launchVelocity.x, this.launchVelocity.y);
     this.setRotation(config.angle);
     this.setTint(config.color);
     this.setDepth(DEPTHS.projectiles);
@@ -67,6 +72,11 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     if (this.lifetime <= 0) {
       this.destroy();
     }
+  }
+
+  launch(): void {
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setVelocity(this.launchVelocity.x, this.launchVelocity.y);
   }
 
   consumePierce(): void {

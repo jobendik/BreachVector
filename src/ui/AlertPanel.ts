@@ -49,20 +49,34 @@ export class AlertPanel {
     this.drawAnimatedBorder(x, y, width, height, color, state.alertState);
     this.graphics.fillStyle(color, state.alertState === 'detected' ? pulse : 0.9);
     this.graphics.fillRect(x, y, width, 4);
+    this.drawSuspicionMeter(x + 16, y + height - 14, width - 62, state.enemySuspicion);
     this.drawAlertGlyph(x + width - 32, y + 42, color, state.alertState);
     this.title.setText(state.alertState.toUpperCase()).setColor(cssColor(color));
     this.detail.setText(
       state.debugEnabled
         ? `DEBUG ACTIVE - ${state.enemiesAlive} HOSTILES`
-        : `${this.detailFor(state.alertState)} - ${state.enemiesAlive} HOSTILES`
+        : `${this.detailFor(state)} - ${state.enemiesAlive} HOSTILES`
     );
     this.detail.setColor(cssColor(state.alertState === 'hidden' ? COLORS.steelLight : color));
   }
 
-  private detailFor(state: HudState['alertState']): string {
-    if (state === 'detected') return 'emergency lights active';
-    if (state === 'searching') return 'hostiles investigating';
+  private detailFor(state: HudState): string {
+    if (state.alertState === 'detected') return 'emergency lights active';
+    if (state.alertState === 'searching') return `awareness ${Math.round(state.enemySuspicion * 100)}%`;
+    if (state.enemySuspicion > 0.08) return `awareness ${Math.round(state.enemySuspicion * 100)}%`;
     return 'silent approach';
+  }
+
+  private drawSuspicionMeter(x: number, y: number, width: number, suspicion: number): void {
+    const ratio = Phaser.Math.Clamp(suspicion, 0, 1);
+    this.graphics.fillStyle(COLORS.steelDark, 0.58);
+    this.graphics.fillRoundedRect(x, y, width, 4, 2);
+    if (ratio <= 0.01) {
+      return;
+    }
+    const color = ratio > 0.72 ? COLORS.alertRed : ratio > 0.3 ? COLORS.hazardOrange : COLORS.hazardAmberBright;
+    this.graphics.fillStyle(color, 0.9);
+    this.graphics.fillRoundedRect(x, y, width * ratio, 4, 2);
   }
 
   private drawAnimatedBorder(

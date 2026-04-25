@@ -8,8 +8,11 @@ import { formatEnemyState } from '../utils/debug';
 export class DebugSystem {
   enabled = false;
   private readonly labels = new Map<string, Phaser.GameObjects.Text>();
+  private readonly suspicionGraphics: Phaser.GameObjects.Graphics;
 
-  constructor(private readonly graphics: Phaser.GameObjects.Graphics) {}
+  constructor(private readonly graphics: Phaser.GameObjects.Graphics) {
+    this.suspicionGraphics = graphics.scene.add.graphics().setDepth(DEPTHS.actors + 3);
+  }
 
   toggle(): boolean {
     this.setEnabled(!this.enabled);
@@ -61,14 +64,62 @@ export class DebugSystem {
       this.graphics.fillStyle(color, 0.9);
       this.graphics.fillCircle(enemy.x, enemy.y - 28, 3);
 
+      this.drawNavPath(enemy);
+
       visibleLabels.add(enemy.actorId);
       this.updateLabel(enemy);
     }
     this.hideLabels(visibleLabels);
   }
 
+  drawSuspicionIndicators(enemies: Enemy[]): void {
+    this.suspicionGraphics.clear();
+    for (const enemy of enemies) {
+      if (enemy.dead || enemy.suspicion <= 0.04 || (!enemy.recentlyVisible && !this.enabled)) {
+        continue;
+      }
+
+      const ratio = Phaser.Math.Clamp(enemy.suspicion, 0, 1);
+      const width = 30;
+      const height = 4;
+      const x = enemy.x - width / 2;
+      const y = enemy.y - 38;
+      const color = this.suspicionColor(ratio);
+
+      this.suspicionGraphics.fillStyle(COLORS.black, 0.72);
+      this.suspicionGraphics.fillRoundedRect(x - 2, y - 2, width + 4, height + 4, 3);
+      this.suspicionGraphics.fillStyle(COLORS.steelDark, 0.88);
+      this.suspicionGraphics.fillRoundedRect(x, y, width, height, 2);
+      this.suspicionGraphics.fillStyle(color, 0.95);
+      this.suspicionGraphics.fillRoundedRect(x, y, width * ratio, height, 2);
+
+      if (ratio >= 0.96) {
+        this.suspicionGraphics.fillStyle(COLORS.alertRed, 0.9);
+        this.suspicionGraphics.fillCircle(enemy.x, y - 7, 4);
+        this.suspicionGraphics.lineStyle(1, COLORS.white, 0.9);
+        this.suspicionGraphics.lineBetween(enemy.x, y - 10, enemy.x, y - 6);
+      }
+    }
+  }
+
+  private drawNavPath(enemy: Enemy): void {
+    if (enemy.navPath.length === 0) return;
+    this.graphics.lineStyle(1, COLORS.operatorGreen, 0.45);
+    this.graphics.beginPath();
+    this.graphics.moveTo(enemy.x, enemy.y);
+    for (const wp of enemy.navPath) {
+      this.graphics.lineTo(wp.x, wp.y);
+    }
+    this.graphics.strokePath();
+    this.graphics.fillStyle(COLORS.operatorGreen, 0.6);
+    for (const wp of enemy.navPath) {
+      this.graphics.fillCircle(wp.x, wp.y, 3);
+    }
+  }
+
   destroy(): void {
     this.clear();
+    this.suspicionGraphics.destroy();
     for (const label of this.labels.values()) {
       label.destroy();
     }
@@ -107,4 +158,16 @@ export class DebugSystem {
       }
     }
   }
+
+  private suspicionColor(ratio: number): number {
+    if (ratio < SUSPICION_INVESTIGATE_RATIO) {
+      return COLORS.hazardAmberBright;
+    }
+    if (ratio < 0.72) {
+      return COLORS.hazardOrange;
+    }
+    return COLORS.alertRed;
+  }
 }
+
+const SUSPICION_INVESTIGATE_RATIO = 0.3;

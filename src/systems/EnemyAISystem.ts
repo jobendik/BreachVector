@@ -3,8 +3,19 @@ import type { Enemy } from '../entities/Enemy';
 import type { Player } from '../entities/Player';
 import { EnemyState } from '../game/types';
 import type { AlertSystem } from './AlertSystem';
+import type { PathfindingSystem } from './PathfindingSystem';
 import type { VisionSystem } from './VisionSystem';
 import type { WeaponSystem } from './WeaponSystem';
+
+const PATH_RECOMPUTE_INTERVAL = 0.85;
+const PATH_RECOMPUTE_JITTER = 0.35;
+const PATH_TARGET_MOVED_SQ = 160 * 160;
+const WAYPOINT_REACH_DIST = 30;
+const SHORT_DIST = 90;
+const SUSPICION_INVESTIGATE_THRESHOLD = 0.3;
+const SUSPICION_DETECTED_THRESHOLD = 1;
+const SUSPICION_FILL_RATE = 0.92;
+const SUSPICION_DRAIN_RATE = 0.34;
 
 interface EnemyAIWorld {
   player: Player;
@@ -13,6 +24,7 @@ interface EnemyAIWorld {
   vision: VisionSystem;
   alert: AlertSystem;
   weapons: WeaponSystem;
+  pathfinding: PathfindingSystem;
 }
 
 export class EnemyAISystem {
@@ -34,12 +46,10 @@ export class EnemyAISystem {
         debugEnabled ||
         this.world.alert.state === 'detected' ||
         this.world.vision.isVisibleFromPlayer(enemy.positionVector);
-      if (seesPlayer) {
-        enemy.lastKnownPlayer = this.world.player.positionVector;
-        enemy.lostSightTimer = 1.4;
-        enemy.setAIState(enemy.role === 'flanker' ? EnemyState.Flank : EnemyState.Attack);
-        this.world.alert.raiseDetected(3.4);
-      } else if (
+
+      this.updateSuspicion(enemy, seesPlayer, deltaSeconds);
+      if (
+        !seesPlayer &&
         (enemy.aiState === EnemyState.Attack || enemy.aiState === EnemyState.Flank) &&
         enemy.lostSightTimer <= 0
       ) {
@@ -48,6 +58,79 @@ export class EnemyAISystem {
 
       this.updateState(enemy, deltaSeconds);
     }
+  }
+
+  private updateSuspicion(enemy: Enemy, seesPlayer: boolean, deltaSeconds: number): void {
+    const combatState =
+      enemy.aiState === EnemyState.Attack ||
+      enemy.aiState === EnemyState.Flank ||
+      enemy.aiState === EnemyState.Cover ||
+      enemy.aiState === EnemyState.Reload;
+
+    if (seesPlayer) {
+      enemy.lastKnownPlayer = this.world.player.positionVector;
+
+      if (combatState || this.world.alert.state === 'detected') {
+        enemy.suspicion = SUSPICION_DETECTED_THRESHOLD;
+        enemy.lostSightTimer = 1.4;
+        if (enemy.aiState !== EnemyState.Cover && enemy.aiState !== EnemyState.Reload) {
+          enemy.setAIState(enemy.role === 'flanker' ? EnemyState.Flank : EnemyState.Attack);
+        }
+        this.world.alert.raiseDetected(3.4);
+        return;
+      }
+
+      const previousSuspicion = enemy.suspicion;
+      const distance = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.world.player.x, this.world.player.y);
+      const visibleDistance = enemy.config.visionDistance * (this.world.player.noiseMultiplier < 0.5 ? 0.88 : 1);
+      const closeness = Phaser.Math.Clamp(1 - distance / visibleDistance, 0, 1);
+      const distanceMultiplier = Phaser.Math.Linear(0.45, 1.25, closeness);
+      const movementMultiplier = Phaser.Math.Linear(0.58, 1, this.world.player.noiseMultiplier);
+      const alertMultiplier =
+        this.world.alert.state === 'searching' ||
+        enemy.aiState === EnemyState.Search ||
+        enemy.aiState === EnemyState.Suspicious
+          ? 1.35
+          : 1;
+      const roleMultiplier =
+        enemy.role === 'captain' ? 1.18 : enemy.role === 'sniper' ? 1.08 : enemy.role === 'heavy' ? 0.88 : 1;
+
+      enemy.suspicion = Phaser.Math.Clamp(
+        enemy.suspicion +
+          deltaSeconds *
+            SUSPICION_FILL_RATE *
+            distanceMultiplier *
+            movementMultiplier *
+            alertMultiplier *
+            roleMultiplier,
+        0,
+        SUSPICION_DETECTED_THRESHOLD
+      );
+
+      if (enemy.suspicion >= SUSPICION_DETECTED_THRESHOLD) {
+        enemy.lostSightTimer = 1.4;
+        enemy.setAIState(enemy.role === 'flanker' ? EnemyState.Flank : EnemyState.Attack);
+        this.world.alert.raiseDetected(3.4);
+        return;
+      }
+
+      if (enemy.suspicion >= SUSPICION_INVESTIGATE_THRESHOLD) {
+        enemy.investigatePoint = this.world.player.positionVector;
+        if (previousSuspicion < SUSPICION_INVESTIGATE_THRESHOLD) {
+          enemy.setAIState(EnemyState.Suspicious);
+          this.world.alert.raiseSearch(2.6);
+        }
+      }
+      return;
+    }
+
+    if ((enemy.aiState === EnemyState.Attack || enemy.aiState === EnemyState.Flank) && enemy.lostSightTimer > 0) {
+      enemy.suspicion = SUSPICION_DETECTED_THRESHOLD;
+      return;
+    }
+
+    const drainMultiplier = enemy.aiState === EnemyState.Search || enemy.aiState === EnemyState.Suspicious ? 0.72 : 1;
+    enemy.suspicion = Math.max(0, enemy.suspicion - deltaSeconds * SUSPICION_DRAIN_RATE * drainMultiplier);
   }
 
   private updateState(enemy: Enemy, deltaSeconds: number): void {
@@ -93,9 +176,10 @@ export class EnemyAISystem {
       return;
     }
     const target = enemy.patrolPoints[enemy.patrolIndex];
-    enemy.moveToward(target, 0.75);
+    this.navigateTo(enemy, target, 0.75);
     if (Phaser.Math.Distance.Between(enemy.x, enemy.y, target.x, target.y) < 24) {
       enemy.patrolIndex = (enemy.patrolIndex + 1) % enemy.patrolPoints.length;
+      enemy.navPath = [];
     }
   }
 
@@ -105,7 +189,7 @@ export class EnemyAISystem {
       enemy.setAIState(EnemyState.Patrol);
       return;
     }
-    enemy.moveToward(target, 0.9);
+    this.navigateTo(enemy, target, 0.9);
     if (Phaser.Math.Distance.Between(enemy.x, enemy.y, target.x, target.y) < 36) {
       enemy.setAIState(EnemyState.Search);
       this.world.alert.raiseSearch(3);
@@ -124,8 +208,9 @@ export class EnemyAISystem {
       enemy.investigatePoint = enemy.lastKnownPlayer
         .clone()
         .add(new Phaser.Math.Vector2(Phaser.Math.Between(-120, 120), Phaser.Math.Between(-120, 120)));
+      enemy.navPath = [];
     }
-    enemy.moveToward(enemy.investigatePoint, 0.8);
+    this.navigateTo(enemy, enemy.investigatePoint, 0.8);
     enemy.searchTimer -= deltaSeconds;
     if (enemy.searchTimer <= 0) {
       enemy.setAIState(enemy.patrolPoints.length > 1 ? EnemyState.Patrol : EnemyState.Guard);
@@ -149,7 +234,7 @@ export class EnemyAISystem {
     }
 
     if (distance > enemy.config.preferredRange * 1.12) {
-      enemy.moveToward(target, enemy.role === 'heavy' ? 0.75 : 1);
+      this.navigateTo(enemy, target, enemy.role === 'heavy' ? 0.75 : 1);
     } else if (distance < enemy.config.preferredRange * 0.52) {
       const away = enemy.positionVector
         .subtract(target)
@@ -171,14 +256,14 @@ export class EnemyAISystem {
 
   private updateFlank(enemy: Enemy): void {
     const player = this.world.player;
-    const toPlayer = player.positionVector.subtract(enemy.positionVector);
+    const toPlayer = player.positionVector.clone().subtract(enemy.positionVector);
     const side = new Phaser.Math.Vector2(-toPlayer.y, toPlayer.x).normalize();
     if (Math.sin(enemy.x * 0.03 + enemy.y * 0.02) < 0) {
       side.scale(-1);
     }
-    const flankTarget = player.positionVector.add(side.scale(enemy.config.preferredRange * 0.82));
-    enemy.moveToward(flankTarget, 1.12);
-    enemy.setFacingVector(player.positionVector.subtract(enemy.positionVector));
+    const flankTarget = player.positionVector.clone().add(side.scale(enemy.config.preferredRange * 0.82));
+    this.navigateTo(enemy, flankTarget, 1.12);
+    enemy.setFacingVector(player.positionVector.clone().subtract(enemy.positionVector));
     if (this.world.vision.hasLineOfSight(enemy.positionVector, player.positionVector)) {
       this.world.weapons.tryFireEnemy(enemy, player.positionVector);
     }
@@ -189,10 +274,10 @@ export class EnemyAISystem {
       enemy.setAIState(EnemyState.Attack);
       return;
     }
-    enemy.moveToward(enemy.coverPoint, 1);
+    this.navigateTo(enemy, enemy.coverPoint, 1);
     if (Phaser.Math.Distance.Between(enemy.x, enemy.y, enemy.coverPoint.x, enemy.coverPoint.y) < 22) {
       enemy.stopMoving();
-      enemy.setFacingVector(this.world.player.positionVector.subtract(enemy.positionVector));
+      enemy.setFacingVector(this.world.player.positionVector.clone().subtract(enemy.positionVector));
       if (this.world.vision.hasLineOfSight(enemy.positionVector, this.world.player.positionVector)) {
         this.world.weapons.tryFireEnemy(enemy, this.world.player.positionVector);
       }
@@ -200,6 +285,46 @@ export class EnemyAISystem {
         enemy.setAIState(EnemyState.Attack);
       }
     }
+  }
+
+  private navigateTo(enemy: Enemy, target: Phaser.Math.Vector2, speedMultiplier = 1): void {
+    const dist = Phaser.Math.Distance.Between(enemy.x, enemy.y, target.x, target.y);
+
+    if (dist < SHORT_DIST) {
+      enemy.moveToward(target, speedMultiplier);
+      return;
+    }
+
+    const tdx = target.x - enemy.navTargetX;
+    const tdy = target.y - enemy.navTargetY;
+    const targetMoved = tdx * tdx + tdy * tdy > PATH_TARGET_MOVED_SQ;
+    const needsRecompute = enemy.navPath.length === 0 || targetMoved || enemy.navRecomputeTimer <= 0;
+
+    if (needsRecompute) {
+      enemy.navTargetX = target.x;
+      enemy.navTargetY = target.y;
+      enemy.navPath = this.world.pathfinding.findPath(enemy.x, enemy.y, target.x, target.y);
+      enemy.navRecomputeTimer = PATH_RECOMPUTE_INTERVAL + Math.random() * PATH_RECOMPUTE_JITTER;
+    }
+
+    // LOS shortcutting: skip intermediate waypoints we can see directly
+    while (enemy.navPath.length > 1) {
+      if (this.world.vision.hasLineOfSight(enemy.positionVector, enemy.navPath[1])) {
+        enemy.navPath.shift();
+      } else {
+        break;
+      }
+    }
+
+    // Consume reached waypoints
+    while (
+      enemy.navPath.length > 0 &&
+      Phaser.Math.Distance.Between(enemy.x, enemy.y, enemy.navPath[0].x, enemy.navPath[0].y) < WAYPOINT_REACH_DIST
+    ) {
+      enemy.navPath.shift();
+    }
+
+    enemy.moveToward(enemy.navPath.length > 0 ? enemy.navPath[0] : target, speedMultiplier);
   }
 
   private findCover(enemy: Enemy): Phaser.Math.Vector2 | undefined {

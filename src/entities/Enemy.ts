@@ -21,6 +21,11 @@ export class Enemy extends Actor {
   lostSightTimer = 0;
   coverPoint?: Phaser.Math.Vector2;
   recentlyVisible = false;
+  suspicion = 0;
+  navPath: Phaser.Math.Vector2[] = [];
+  navTargetX = 0;
+  navTargetY = 0;
+  navRecomputeTimer = 0;
 
   constructor(scene: Phaser.Scene, spawn: EnemySpawnData) {
     const definition = enemyDefinitions[spawn.role];
@@ -56,13 +61,21 @@ export class Enemy extends Actor {
     if (this.aiState !== next) {
       this.aiState = next;
       this.searchTimer = next === EnemyState.Search ? Phaser.Math.FloatBetween(2, 4) : this.searchTimer;
+      this.navPath = [];
+      this.navRecomputeTimer = 0;
     }
   }
 
   hearNoise(point: Phaser.Math.Vector2, important = false): void {
-    if (this.dead || this.aiState === EnemyState.Attack) {
+    if (
+      this.dead ||
+      this.aiState === EnemyState.Attack ||
+      this.aiState === EnemyState.Flank ||
+      this.aiState === EnemyState.Cover
+    ) {
       return;
     }
+    this.suspicion = Math.max(this.suspicion, important ? 0.52 : 0.24);
     this.investigatePoint = point.clone();
     this.lastKnownPlayer = point.clone();
     this.setAIState(important ? EnemyState.Search : EnemyState.Suspicious);
@@ -72,6 +85,7 @@ export class Enemy extends Actor {
     this.fireCooldown = Math.max(0, this.fireCooldown - deltaSeconds);
     this.reloadRemaining = Math.max(0, this.reloadRemaining - deltaSeconds);
     this.lostSightTimer = Math.max(0, this.lostSightTimer - deltaSeconds);
+    this.navRecomputeTimer = Math.max(0, this.navRecomputeTimer - deltaSeconds);
     if (this.searchTimer > 0) {
       this.searchTimer = Math.max(0, this.searchTimer - deltaSeconds);
     }

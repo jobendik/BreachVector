@@ -78,7 +78,7 @@ export class PauseScene extends Phaser.Scene {
       this.button(x, y, 'RESUME', () => this.resumeGame(), COLORS.operatorGreenBright),
       this.button(x, y + 56, 'RESTART SECTOR', () => this.confirmRestart(), COLORS.hazardAmberBright),
       this.button(x, y + 112, 'CONTROLS', () => this.setPanel('controls'), COLORS.systemCyan),
-      this.button(x, y + 168, 'SETTINGS', () => this.setPanel('settings'), COLORS.energyVioletBright),
+      this.button(x, y + 168, 'SETTINGS', () => this.scene.launch('SettingsScene'), COLORS.energyVioletBright),
       this.button(x, y + 224, 'QUIT TO MENU', () => this.quitToMenu(), COLORS.alertRed)
     ];
     this.restartButton = this.buttons[1];
