@@ -1,4 +1,4 @@
-import { TextureKeys } from '../game/constants';
+import { COLORS, TextureKeys } from '../game/constants';
 import type { PickupType } from '../game/types';
 
 export interface PickupDefinition {
@@ -14,21 +14,21 @@ export const pickupDefinitions: Record<PickupType, PickupDefinition> = {
     type: 'medkit',
     displayName: 'Medkit',
     textureKey: TextureKeys.Medkit,
-    color: 0x22c55e,
+    color: COLORS.operatorGreenBright,
     log: 'Medkit recovered'
   },
   ammo: {
     type: 'ammo',
     displayName: 'Ammo Cache',
     textureKey: TextureKeys.Ammo,
-    color: 0x38bdf8,
+    color: COLORS.systemCyan,
     log: 'Ammo cache secured'
   },
   grenade: {
     type: 'grenade',
     displayName: 'Grenade',
     textureKey: TextureKeys.GrenadePickup,
-    color: 0xf97316,
+    color: COLORS.hazardOrange,
     log: 'Grenade restocked'
   }
 };

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { DEPTHS } from '../game/constants';
+import { COLORS, DEPTHS } from '../game/constants';
 import type { HudState } from '../game/types';
+import { cssColor } from '../utils/colors';
 
 export class AlertPanel {
   private readonly graphics: Phaser.GameObjects.Graphics;
@@ -28,24 +29,88 @@ export class AlertPanel {
 
   update(state: HudState): void {
     const { x, y, width, height } = this.bounds;
-    const color = state.alertState === 'detected' ? 0xef4444 : state.alertState === 'searching' ? 0xf59e0b : 0x64748b;
+    const color =
+      state.alertState === 'detected'
+        ? COLORS.alertRed
+        : state.alertState === 'searching'
+          ? COLORS.hazardAmber
+          : COLORS.systemCyan;
+    const pulse =
+      state.alertState === 'detected'
+        ? 0.62 + Math.sin(Date.now() / 95) * 0.22
+        : state.alertState === 'searching'
+          ? 0.48
+          : 0.28;
     this.graphics.clear();
-    this.graphics.fillStyle(0x07111f, 0.88);
+    this.graphics.fillStyle(COLORS.blacksitePanel, 0.88);
     this.graphics.fillRoundedRect(x, y, width, height, 8);
-    this.graphics.lineStyle(1, color, 0.48);
+    this.graphics.lineStyle(1, color, pulse);
     this.graphics.strokeRoundedRect(x, y, width, height, 8);
-    this.graphics.fillStyle(color, 0.9);
+    this.drawAnimatedBorder(x, y, width, height, color, state.alertState);
+    this.graphics.fillStyle(color, state.alertState === 'detected' ? pulse : 0.9);
     this.graphics.fillRect(x, y, width, 4);
-    this.title.setText(state.alertState.toUpperCase()).setColor(`#${color.toString(16).padStart(6, '0')}`);
+    this.drawAlertGlyph(x + width - 32, y + 42, color, state.alertState);
+    this.title.setText(state.alertState.toUpperCase()).setColor(cssColor(color));
     this.detail.setText(
-      state.debugEnabled ? `DEBUG ACTIVE - ${state.enemiesAlive} HOSTILES` : this.detailFor(state.alertState)
+      state.debugEnabled
+        ? `DEBUG ACTIVE - ${state.enemiesAlive} HOSTILES`
+        : `${this.detailFor(state.alertState)} - ${state.enemiesAlive} HOSTILES`
     );
+    this.detail.setColor(cssColor(state.alertState === 'hidden' ? COLORS.steelLight : color));
   }
 
   private detailFor(state: HudState['alertState']): string {
     if (state === 'detected') return 'emergency lights active';
     if (state === 'searching') return 'hostiles investigating';
     return 'silent approach';
+  }
+
+  private drawAnimatedBorder(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: number,
+    state: HudState['alertState']
+  ): void {
+    const t = Date.now() / 1000;
+    if (state === 'hidden') {
+      this.graphics.lineStyle(1, color, 0.18 + Math.sin(t * 4) * 0.05);
+      for (let sx = x + 16; sx < x + width - 18; sx += 22) {
+        this.graphics.lineBetween(sx, y + height - 7, sx + 10, y + height - 7);
+      }
+      return;
+    }
+    if (state === 'searching') {
+      const sweepX = x + 8 + ((Date.now() / 14) % (width - 16));
+      this.graphics.lineStyle(1, color, 0.42);
+      this.graphics.lineBetween(sweepX, y + 8, sweepX + 16, y + 8);
+      this.graphics.lineBetween(sweepX - 12, y + height - 8, sweepX + 4, y + height - 8);
+      return;
+    }
+    this.graphics.lineStyle(2, color, 0.48 + Math.sin(t * 12) * 0.18);
+    this.graphics.strokeRect(x + 5, y + 5, width - 10, height - 10);
+  }
+
+  private drawAlertGlyph(x: number, y: number, color: number, state: HudState['alertState']): void {
+    this.graphics.lineStyle(2, color, 0.9);
+    if (state === 'detected') {
+      this.graphics.strokeTriangle(x, y - 11, x - 12, y + 10, x + 12, y + 10);
+      this.graphics.lineBetween(x, y - 3, x, y + 4);
+      this.graphics.fillStyle(color, 0.9);
+      this.graphics.fillCircle(x, y + 8, 2);
+      return;
+    }
+    if (state === 'searching') {
+      this.graphics.strokeCircle(x, y, 10);
+      this.graphics.lineBetween(x + 8, y + 8, x + 15, y + 15);
+      return;
+    }
+    this.graphics.beginPath();
+    this.graphics.arc(x, y, 12, -0.7, 0.7);
+    this.graphics.strokePath();
+    this.graphics.fillStyle(color, 0.72);
+    this.graphics.fillCircle(x + 9, y, 2);
   }
 
   private textStyle(size: number, color: string): Phaser.Types.GameObjects.Text.TextStyle {

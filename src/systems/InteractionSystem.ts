@@ -6,6 +6,12 @@ import { PLAYER_BALANCE } from '../game/constants';
 import type { LevelData } from '../game/types';
 import { pointInRect, rectCenter } from '../utils/geometry';
 
+export interface InteractionStatus {
+  kind: 'none' | 'terminal' | 'door' | 'extraction';
+  prompt: string;
+  progress: number;
+}
+
 interface InteractionWorld {
   player: Player;
   level: LevelData;
@@ -29,12 +35,12 @@ interface InteractionWorld {
 }
 
 export class InteractionSystem {
-  private prompt = '';
+  private status: InteractionStatus = { kind: 'none', prompt: '', progress: 0 };
 
   constructor(private readonly world: InteractionWorld) {}
 
-  update(deltaSeconds: number): string {
-    this.prompt = '';
+  update(deltaSeconds: number): InteractionStatus {
+    this.status = { kind: 'none', prompt: '', progress: 0 };
     const terminal = this.nearestTerminal();
     const door = this.nearestDoor();
 
@@ -46,24 +52,34 @@ export class InteractionSystem {
 
     if (terminal && !terminal.hacked) {
       this.updateTerminal(terminal, deltaSeconds);
-      return this.prompt;
+      return this.status;
     }
 
     if (door && !door.open) {
       this.updateDoor(door);
-      return this.prompt;
+      return this.status;
     }
 
-    if (this.world.mission.canExtract() && pointInRect(this.world.player, this.world.level.extraction)) {
-      this.prompt = 'EXTRACTION READY';
+    if (pointInRect(this.world.player, this.world.level.extraction)) {
+      const canExtract = this.world.mission.canExtract();
+      this.status = {
+        kind: 'extraction',
+        prompt: canExtract ? 'EXTRACTION READY' : 'EXTRACTION LOCKED: COMPLETE OBJECTIVES',
+        progress: canExtract ? 1 : 0
+      };
     }
 
-    return this.prompt;
+    return this.status;
   }
 
   private updateTerminal(terminal: Terminal, deltaSeconds: number): void {
-    const progress = Math.round((terminal.progress / terminal.hackTime) * 100);
-    this.prompt = `[E] ${terminal.prompt.toUpperCase()} ${progress}%`;
+    const ratio = terminal.progress / terminal.hackTime;
+    const progress = Math.round(ratio * 100);
+    this.status = {
+      kind: 'terminal',
+      prompt: `[E] HOLD ${terminal.prompt.toUpperCase()} ${progress}%`,
+      progress: ratio
+    };
     if (!this.world.input.interactHeld()) {
       return;
     }
@@ -86,7 +102,11 @@ export class InteractionSystem {
   }
 
   private updateDoor(door: Door): void {
-    this.prompt = door.locked ? `LOCKED: TERMINAL ${door.doorId.toUpperCase()} REQUIRED` : '[E] OPEN SECURITY DOOR';
+    this.status = {
+      kind: 'door',
+      prompt: door.locked ? `LOCKED: REQUIRES TERMINAL ${door.doorId.toUpperCase()}` : '[E] OPEN SECURITY DOOR',
+      progress: door.locked ? 0 : 1
+    };
     if (door.locked || !this.world.input.interactHeld()) {
       return;
     }

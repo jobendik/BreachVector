@@ -1,0 +1,37 @@
+name: Portfolio Polish Task
+description: Track a focused improvement for Breach Vector without losing scope.
+title: '[Polish]: '
+labels: ['portfolio-polish']
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should feel better, safer, clearer, or more impressive when this is done?
+      placeholder: "Example: Make Sector 1's first terminal easier to read within 10 seconds."
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: List the concrete files, systems, or gameplay surfaces likely involved.
+      placeholder: 'Example: Level data, objective HUD, tactical log.'
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Use checkboxes so the task can be reviewed quickly.
+      value: |
+        - [ ] Builds with `npm run check`
+        - [ ] Relevant smoke/manual test path is noted
+        - [ ] Roadmap checkbox is updated if this completes a roadmap item
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Add references, screenshots, risks, or follow-up ideas.

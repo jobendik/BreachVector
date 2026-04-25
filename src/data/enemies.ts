@@ -1,4 +1,4 @@
-import { TextureKeys } from '../game/constants';
+import { COLORS, TextureKeys } from '../game/constants';
 import type { EnemyDefinition, EnemyRole } from '../game/types';
 
 export const enemyDefinitions: Record<EnemyRole, EnemyDefinition> = {
@@ -19,7 +19,7 @@ export const enemyDefinitions: Record<EnemyRole, EnemyDefinition> = {
     projectileSpeed: 900,
     fireRate: 3.1,
     burstCount: 2,
-    color: 0xef4444,
+    color: COLORS.alertRed,
     noiseRadius: 470,
     reloadTime: 1.1
   },
@@ -40,7 +40,7 @@ export const enemyDefinitions: Record<EnemyRole, EnemyDefinition> = {
     projectileSpeed: 1280,
     fireRate: 0.92,
     burstCount: 1,
-    color: 0xf97316,
+    color: COLORS.hazardOrange,
     noiseRadius: 650,
     reloadTime: 1.45
   },
@@ -61,7 +61,7 @@ export const enemyDefinitions: Record<EnemyRole, EnemyDefinition> = {
     projectileSpeed: 820,
     fireRate: 1.55,
     burstCount: 4,
-    color: 0xa855f7,
+    color: COLORS.energyViolet,
     noiseRadius: 520,
     reloadTime: 1
   },
@@ -82,7 +82,7 @@ export const enemyDefinitions: Record<EnemyRole, EnemyDefinition> = {
     projectileSpeed: 760,
     fireRate: 1.25,
     burstCount: 3,
-    color: 0xf59e0b,
+    color: COLORS.hazardAmber,
     noiseRadius: 700,
     reloadTime: 1.8
   },
@@ -103,7 +103,7 @@ export const enemyDefinitions: Record<EnemyRole, EnemyDefinition> = {
     projectileSpeed: 1040,
     fireRate: 2.4,
     burstCount: 3,
-    color: 0x22c55e,
+    color: COLORS.alertRed,
     noiseRadius: 800,
     reloadTime: 1.35
   }

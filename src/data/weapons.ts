@@ -1,4 +1,4 @@
-import { TextureKeys } from '../game/constants';
+import { COLORS, TextureKeys } from '../game/constants';
 import type { WeaponDefinition, WeaponId } from '../game/types';
 
 export const weapons: WeaponDefinition[] = [
@@ -13,7 +13,7 @@ export const weapons: WeaponDefinition[] = [
     projectileSpeed: 1120,
     spread: 0.025,
     projectileCount: 1,
-    color: 0xa7f3d0,
+    color: COLORS.operatorGreenSoft,
     noiseRadius: 150,
     recoil: 34,
     screenShake: 1.8,
@@ -33,7 +33,7 @@ export const weapons: WeaponDefinition[] = [
     projectileSpeed: 1240,
     spread: 0.055,
     projectileCount: 1,
-    color: 0x38bdf8,
+    color: COLORS.systemCyan,
     noiseRadius: 620,
     recoil: 50,
     screenShake: 2.4,
@@ -53,7 +53,7 @@ export const weapons: WeaponDefinition[] = [
     projectileSpeed: 860,
     spread: 0.23,
     projectileCount: 8,
-    color: 0xfbbf24,
+    color: COLORS.hazardAmberBright,
     noiseRadius: 760,
     recoil: 115,
     screenShake: 5.2,
@@ -73,7 +73,7 @@ export const weapons: WeaponDefinition[] = [
     projectileSpeed: 2600,
     spread: 0,
     projectileCount: 1,
-    color: 0xc084fc,
+    color: COLORS.energyVioletBright,
     noiseRadius: 980,
     recoil: 155,
     screenShake: 6,

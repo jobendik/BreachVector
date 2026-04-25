@@ -1,4 +1,9 @@
+import { COLORS } from '../utils/colors';
+
+export { COLORS };
+
 export const GAME_TITLE = 'BREACH VECTOR: BLACKSITE';
+export const GAME_VERSION = '0.1.0';
 
 export const VIEWPORT = {
   width: 1280,
@@ -17,23 +22,6 @@ export const DEPTHS = {
   fog: 45,
   debug: 1000,
   ui: 2000
-} as const;
-
-export const COLORS = {
-  background: 0x020617,
-  floor: 0x06111f,
-  wall: 0x162033,
-  wallStroke: 0x38bdf8,
-  cyan: 0x38bdf8,
-  green: 0x10b981,
-  greenBright: 0x34d399,
-  red: 0xef4444,
-  orange: 0xf97316,
-  amber: 0xf59e0b,
-  violet: 0xa855f7,
-  slate: 0x64748b,
-  white: 0xe5eefb,
-  black: 0x020617
 } as const;
 
 export const TextureKeys = {

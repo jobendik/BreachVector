@@ -86,14 +86,14 @@ The project already has a good file/folder structure. The next step is making th
 - [x] Replace loose string event names with a strongly typed event map.
 - [x] Make enemy states a strict enum or const union with exhaustive handling.
 - [x] Make weapon IDs, pickup IDs, enemy role IDs, and level IDs strict literal types.
-- [ ] Ensure `npm run typecheck` passes from a clean clone.
+- [x] Ensure `npm run typecheck` passes from a clean clone.
 
 ### 1.3 Lifecycle & Cleanup
 - [x] Add explicit `destroy()` methods to systems that register events, timers, or scene listeners.
 - [x] Ensure UIScene unsubscribes from event bus listeners on shutdown.
 - [ ] Ensure GameScene fully resets projectiles, particles, enemies, minimap data, audio state, and mission state between sectors.
 - [x] Prevent duplicate scene listeners when restarting a sector.
-- [ ] Add a `SceneCleanupChecklist.md` or document lifecycle ownership in `ARCHITECTURE.md`.
+- [x] Add a `SceneCleanupChecklist.md` or document lifecycle ownership in `ARCHITECTURE.md`.
 
 ### 1.4 Repository Professionalism
 - [x] Add ESLint + TypeScript ESLint with a practical ruleset.
@@ -102,7 +102,7 @@ The project already has a good file/folder structure. The next step is making th
 - [x] Add `npm run check` that runs typecheck + lint + build.
 - [x] Add a GitHub Actions workflow that validates the project on push.
 - [x] Add a `.nvmrc` or document the recommended Node version.
-- [ ] Add a clean issue template or TODO roadmap for future tasks.
+- [x] Add a clean issue template or TODO roadmap for future tasks.
 
 ### 1.5 Automated Smoke Testing
 - [x] Add Playwright or Vitest browser smoke test that confirms the menu boots.
@@ -118,34 +118,34 @@ The project already has a good file/folder structure. The next step is making th
 The current generated placeholder style is useful, but the game needs a stronger visual identity before it becomes a true portfolio gem.
 
 ### 2.1 Tactical Neon Art Direction
-- [ ] Define a strict palette: blacksite navy, cyan systems light, green operator light, red alert light, amber hazard light, violet high-tech energy.
-- [ ] Move all colors into `src/utils/colors.ts` or a visual theme file.
-- [ ] Ensure every faction and gameplay category has a consistent visual language.
-- [ ] Use shape + color together so important information is not color-only.
-- [ ] Add a one-page `VISUAL_STYLE.md` with palette, shape language, and examples.
+- [x] Define a strict palette: blacksite navy, cyan systems light, green operator light, red alert light, amber hazard light, violet high-tech energy.
+- [x] Move all colors into `src/utils/colors.ts` or a visual theme file.
+- [x] Ensure every faction and gameplay category has a consistent visual language.
+- [x] Use shape + color together so important information is not color-only.
+- [x] Add a one-page `VISUAL_STYLE.md` with palette, shape language, and examples.
 
 ### 2.2 Generated Placeholder Art Upgrade
-- [ ] Replace simple circles/rectangles with multi-part generated sprites.
-- [ ] Player should have body core, armor plates, weapon mount, facing indicator, and dash glow.
-- [ ] Assault enemies should have compact triangular combat silhouettes.
-- [ ] Snipers should have thin long-barrel silhouettes and laser sight telegraphs.
-- [ ] Flankers should have angular orange shapes and motion trails.
-- [ ] Heavies should have broad armored silhouettes and shield arcs.
-- [ ] Captains should have a distinct command aura, crown-like antenna shape, or red command ring.
-- [ ] Terminals should animate with scanning bars and small blinking glyph-like shapes, but no unreadable text dependency.
-- [ ] Doors should look like security barriers with segmented locks and warning stripes.
-- [ ] Crates should have panel lines, corner brackets, and damage cracks.
-- [ ] Barrels should pulse subtly and show hazard glow before exploding.
+- [x] Replace simple circles/rectangles with multi-part generated sprites.
+- [x] Player should have body core, armor plates, weapon mount, facing indicator, and dash glow.
+- [x] Assault enemies should have compact triangular combat silhouettes.
+- [x] Snipers should have thin long-barrel silhouettes and laser sight telegraphs.
+- [x] Flankers should have angular orange shapes and motion trails.
+- [x] Heavies should have broad armored silhouettes and shield arcs.
+- [x] Captains should have a distinct command aura, crown-like antenna shape, or red command ring.
+- [x] Terminals should animate with scanning bars and small blinking glyph-like shapes, but no unreadable text dependency.
+- [x] Doors should look like security barriers with segmented locks and warning stripes.
+- [x] Crates should have panel lines, corner brackets, and damage cracks.
+- [x] Barrels should pulse subtly and show hazard glow before exploding.
 
 ### 2.3 Level Environment Rendering
-- [ ] Add layered floor panels instead of one flat floor color.
-- [ ] Add subtle tile seams, cable paths, vents, grates, stains, and circuit traces.
+- [x] Add layered floor panels instead of one flat floor color.
+- [x] Add subtle tile seams, cable paths, vents, grates, stains, and circuit traces.
 - [ ] Add sector-specific environment themes: Data Vault, Reactor Hall, Cryo Lab, Command Core, Exterior Dock.
-- [ ] Add wall bevels and inner shadows so walls read as physical structures.
+- [x] Add wall bevels and inner shadows so walls read as physical structures.
 - [ ] Add ambient occlusion darkening near wall corners and door frames.
 - [ ] Add animated security lights along corridors.
 - [ ] Add broken panels, exposed wires, smoke vents, sparks, and small environmental details.
-- [ ] Make extraction zone feel like a real landing pad / breach corridor, not just a rectangle.
+- [x] Make extraction zone feel like a real landing pad / breach corridor, not just a rectangle.
 
 ### 2.4 Lighting System
 - [ ] Add a dynamic light layer rendered with additive/screen blending.
@@ -272,36 +272,36 @@ The HUD should look like a real tactical operator interface without becoming clu
 
 ### 5.1 Health, Armor & Dash Panel
 - [x] Health, armor, and dash data exist in HUD.
-- [ ] Replace plain bars with segmented tactical bars.
-- [ ] Health bar should change color and pulse below 30%.
+- [x] Replace plain bars with segmented tactical bars.
+- [x] Health bar should change color and pulse below 30%.
 - [ ] Armor bar should show shield absorption with a brief white-blue flash.
-- [ ] Dash bar should refill with a moving highlight sweep.
-- [ ] Add small icons for health, armor, and dash.
-- [ ] Add accessibility-friendly labels, not icon-only information.
+- [x] Dash bar should refill with a moving highlight sweep.
+- [x] Add small icons for health, armor, and dash.
+- [x] Add accessibility-friendly labels, not icon-only information.
 
 ### 5.2 Weapon Panel
 - [x] Weapon name, ammo, reserve ammo, grenades, and reload state exist.
-- [ ] Add weapon silhouette/placeholder icon.
-- [ ] Add current fire mode and noise level indicator.
-- [ ] Add reload progress animation.
-- [ ] Add magazine visualization using bullet ticks or segmented cells.
-- [ ] Add low-ammo warning.
+- [x] Add weapon silhouette/placeholder icon.
+- [x] Add current fire mode and noise level indicator.
+- [x] Add reload progress animation.
+- [x] Add magazine visualization using bullet ticks or segmented cells.
+- [x] Add low-ammo warning.
 - [ ] Add grenade cooldown/fuse indicator.
 - [ ] Add weapon switch animation when pressing 1–4.
 
 ### 5.3 Objective Panel
 - [x] Objective checklist exists.
-- [ ] Add objective icons: terminal, door, command unit, extraction.
+- [x] Add objective icons: terminal, door, command unit, extraction.
 - [ ] Add objective distance markers.
 - [ ] Add animated objective completion transitions.
-- [ ] Add “next recommended objective” highlight.
+- [x] Add “next recommended objective” highlight.
 - [ ] Add optional compass arrow to nearest incomplete objective.
 - [ ] Add mission briefing text per sector.
 
 ### 5.4 Alert Panel
 - [x] Hidden, Searching, and Detected states exist.
 - [ ] Add alert meter showing how close enemies are to full detection.
-- [ ] Add state-specific animated border: cool scan, amber pulse, red emergency.
+- [x] Add state-specific animated border: cool scan, amber pulse, red emergency.
 - [ ] Add enemy awareness count: unaware / suspicious / engaged.
 - [ ] Add “last seen” timer when returning from Detected to Searching.
 - [ ] Add siren icon or waveform during Detected.
@@ -316,20 +316,20 @@ The HUD should look like a real tactical operator interface without becoming clu
 
 ### 5.6 Minimap
 - [x] Minimap exists.
-- [ ] Show walls with stronger contrast.
-- [ ] Show terminals, doors, pickups, and extraction with distinct icons.
-- [ ] Show enemies only when detected, recently seen, or debug mode is active.
-- [ ] Add alert sweep animation on minimap during Detected.
-- [ ] Add player facing cone.
+- [x] Show walls with stronger contrast.
+- [x] Show terminals, doors, pickups, and extraction with distinct icons.
+- [x] Show enemies only when detected, recently seen, or debug mode is active.
+- [x] Add alert sweep animation on minimap during Detected.
+- [x] Add player facing cone.
 - [ ] Add minimap zoom modes.
 - [ ] Add sector objective pings.
 
 ### 5.7 Interaction Prompts
 - [x] Interaction prompt exists.
-- [ ] Add hold-progress ring for terminal hacking.
-- [ ] Add terminal-specific prompt text.
-- [ ] Add locked-door prompt: “Requires Terminal A.”
-- [ ] Add extraction prompt explaining incomplete objectives.
+- [x] Add hold-progress ring for terminal hacking.
+- [x] Add terminal-specific prompt text.
+- [x] Add locked-door prompt: “Requires Terminal A.”
+- [x] Add extraction prompt explaining incomplete objectives.
 - [ ] Add pickup prompt if inventory full.
 - [ ] Add F takedown prompt only when enemy is in valid range/angle.
 
@@ -341,13 +341,13 @@ Menus are part of the portfolio impression. They should feel like a finished gam
 
 ### 6.1 Main Menu
 - [x] Phaser-rendered menu exists.
-- [ ] Add animated blacksite background with slow-moving security grid.
-- [ ] Add title glitch/scanline animation.
-- [ ] Add operator briefing card with mission premise.
-- [ ] Add menu buttons: Start Operation, Controls, Settings, Credits.
+- [x] Add animated blacksite background with slow-moving security grid.
+- [x] Add title glitch/scanline animation.
+- [x] Add operator briefing card with mission premise.
+- [x] Add menu buttons: Start Operation, Controls, Settings, Credits.
 - [ ] Add “Continue” once persistence exists.
-- [ ] Add difficulty/mode selector.
-- [ ] Add version number and GitHub-friendly presentation text.
+- [x] Add difficulty/mode selector.
+- [x] Add version number and GitHub-friendly presentation text.
 
 ### 6.2 Sector Select Screen
 - [ ] Add sector select scene after menu.
@@ -360,11 +360,11 @@ Menus are part of the portfolio impression. They should feel like a finished gam
 
 ### 6.3 Pause Menu
 - [x] Pause scene exists.
-- [ ] Add resume, restart, controls, settings, quit to menu.
-- [ ] Add blurred/dimmed game background.
-- [ ] Add tactical pause readout: current objectives, active alert state, enemies remaining.
-- [ ] Add keybind reminder panel.
-- [ ] Add “Restart Sector” confirmation to prevent accidents.
+- [x] Add resume, restart, controls, settings, quit to menu.
+- [x] Add blurred/dimmed game background.
+- [x] Add tactical pause readout: current objectives, active alert state, enemies remaining.
+- [x] Add keybind reminder panel.
+- [x] Add “Restart Sector” confirmation to prevent accidents.
 
 ### 6.4 Game Over Screen
 - [x] GameOver scene exists.
@@ -842,7 +842,7 @@ Polish means the game remains smooth and stable as effects increase.
 - [ ] Add optional dev counter for allocations or object creation.
 
 ### 16.4 Build & Deployment
-- [ ] Verify clean `npm install` and `npm run build`.
+- [x] Verify clean `npm install` and `npm run build`.
 - [ ] Add GitHub Actions deploy to Pages.
 - [ ] Add production build badge to README.
 - [ ] Add live demo link once deployed.

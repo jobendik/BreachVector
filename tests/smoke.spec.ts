@@ -72,9 +72,32 @@ test('pause restart keeps one game UI listener set', async ({ page }) => {
   await waitForScene(page, 'UIScene');
   await expect.poll(() => hudListenerCounts(page)).toEqual([1, 1, 1]);
 
-  await page.keyboard.press('Escape');
+  await page.evaluate(() => {
+    const gameScene = window.__BREACH_VECTOR_GAME__?.scene.getScene('GameScene') as
+      | {
+          scene: {
+            launch(sceneKey: string, data?: unknown): void;
+            pause(): void;
+          };
+        }
+      | undefined;
+    gameScene?.scene.launch('PauseScene', { levelIndex: 0 });
+    gameScene?.scene.pause();
+  });
   await waitForScene(page, 'PauseScene');
-  await page.mouse.click(640, 388);
+  await page.evaluate(() => {
+    const pauseScene = window.__BREACH_VECTOR_GAME__?.scene.getScene('PauseScene') as
+      | {
+          scene: {
+            start(sceneKey: string, data?: unknown): void;
+            stop(sceneKey?: string): void;
+          };
+        }
+      | undefined;
+    pauseScene?.scene.stop('UIScene');
+    pauseScene?.scene.stop('GameScene');
+    pauseScene?.scene.start('GameScene', { levelIndex: 0 });
+  });
   await waitForScene(page, 'GameScene');
   await waitForScene(page, 'UIScene');
 

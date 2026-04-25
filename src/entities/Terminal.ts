@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
-import { DEPTHS, TextureKeys } from '../game/constants';
+import { COLORS, DEPTHS, TextureKeys } from '../game/constants';
 import type { TerminalData } from '../game/types';
 
 export class Terminal extends Phaser.Physics.Arcade.Sprite {
   readonly terminalId: string;
   readonly prompt: string;
   readonly hackTime: number;
+  private readonly idleTween: Phaser.Tweens.Tween;
   hacked = false;
   progress = 0;
 
@@ -21,6 +22,14 @@ export class Terminal extends Phaser.Physics.Arcade.Sprite {
     body.setImmovable(true);
     body.setCircle(18);
     this.setDepth(DEPTHS.terminals);
+    this.idleTween = scene.tweens.add({
+      targets: this,
+      alpha: 0.82,
+      duration: 880,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
   }
 
   advance(deltaSeconds: number): boolean {
@@ -30,7 +39,9 @@ export class Terminal extends Phaser.Physics.Arcade.Sprite {
     this.progress = Phaser.Math.Clamp(this.progress + deltaSeconds, 0, this.hackTime);
     if (this.progress >= this.hackTime) {
       this.hacked = true;
-      this.setTint(0x34d399);
+      this.idleTween.stop();
+      this.setTint(COLORS.operatorGreenBright);
+      this.setAlpha(1);
       return true;
     }
     return false;
@@ -40,5 +51,10 @@ export class Terminal extends Phaser.Physics.Arcade.Sprite {
     if (!this.hacked) {
       this.progress = Math.max(0, this.progress - deltaSeconds * 1.4);
     }
+  }
+
+  destroy(fromScene?: boolean): void {
+    this.idleTween.stop();
+    super.destroy(fromScene);
   }
 }

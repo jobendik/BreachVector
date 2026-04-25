@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTHS, TextureKeys } from '../game/constants';
+import { COLORS, DEPTHS, TextureKeys } from '../game/constants';
 import type { DoorData, RectData } from '../game/types';
 
 export class Door extends Phaser.Physics.Arcade.Sprite {
@@ -27,7 +27,7 @@ export class Door extends Phaser.Physics.Arcade.Sprite {
 
   unlock(): void {
     this.locked = false;
-    this.setTint(0x34d399);
+    this.setTint(COLORS.operatorGreenBright);
   }
 
   openDoor(): void {
@@ -37,6 +37,6 @@ export class Door extends Phaser.Physics.Arcade.Sprite {
     this.open = true;
     this.disableBody(true, false);
     this.setAlpha(0.18);
-    this.setTint(0x22c55e);
+    this.setTint(COLORS.operatorGreen);
   }
 }

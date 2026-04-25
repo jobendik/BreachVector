@@ -23,7 +23,7 @@ import { DebugSystem } from '../systems/DebugSystem';
 import { EffectsSystem } from '../systems/EffectsSystem';
 import { EnemyAISystem } from '../systems/EnemyAISystem';
 import { InputSystem } from '../systems/InputSystem';
-import { InteractionSystem } from '../systems/InteractionSystem';
+import { InteractionSystem, type InteractionStatus } from '../systems/InteractionSystem';
 import { MinimapSystem } from '../systems/MinimapSystem';
 import { MissionSystem } from '../systems/MissionSystem';
 import { VisionSystem } from '../systems/VisionSystem';
@@ -66,7 +66,7 @@ export class GameScene extends Phaser.Scene {
 
   private visibilityGraphics!: Phaser.GameObjects.Graphics;
   private extractionZone!: ExtractionZone;
-  private interactionPrompt = '';
+  private interactionStatus: InteractionStatus = { kind: 'none', prompt: '', progress: 0 };
   private tacticalLog: string[] = [];
   private minimapTimer = 0;
   private sectorEnding = false;
@@ -81,7 +81,7 @@ export class GameScene extends Phaser.Scene {
     this.level = getLevel(this.levelIndex);
     this.sectorEnding = false;
     this.tacticalLog = [];
-    this.interactionPrompt = '';
+    this.interactionStatus = { kind: 'none', prompt: '', progress: 0 };
 
     this.physics.world.setBounds(0, 0, this.level.width, this.level.height);
     this.cameras.main.setBounds(0, 0, this.level.width, this.level.height);
@@ -112,7 +112,12 @@ export class GameScene extends Phaser.Scene {
     this.audio.resume();
 
     if (this.inputSystem.pausePressed()) {
-      this.scene.launch('PauseScene', { levelIndex: this.levelIndex });
+      this.scene.launch('PauseScene', {
+        levelIndex: this.levelIndex,
+        alertState: this.alert.state,
+        enemiesAlive: this.enemyEntities.filter((enemy) => !enemy.dead).length,
+        objectives: this.mission.objectives()
+      });
       this.scene.pause();
       return;
     }
@@ -159,7 +164,7 @@ export class GameScene extends Phaser.Scene {
       this.handleMelee();
     }
 
-    this.interactionPrompt = this.interaction.update(deltaSeconds);
+    this.interactionStatus = this.interaction.update(deltaSeconds);
     this.enemyAI.update(deltaSeconds, this.debug.enabled);
     this.debug.drawEnemyOverlay(this.enemyEntities);
     this.updateProjectiles(deltaSeconds);
@@ -485,20 +490,36 @@ export class GameScene extends Phaser.Scene {
       dashRatio: this.player.dashRatio,
       grenades: this.player.grenades,
       maxGrenades: PLAYER_BALANCE.maxGrenades,
+      weaponId: weaponState.definition.id,
       weaponName: weaponState.definition.displayName,
       weaponColor: weaponState.definition.color,
+      magazineSize: weaponState.definition.magazineSize,
+      weaponFireMode: weaponState.definition.automatic ? 'AUTO' : 'SEMI',
+      weaponNoiseLevel: this.weaponNoiseLevel(weaponState.definition.noiseRadius),
       ammo: weaponState.ammo,
       reserveAmmo: weaponState.reserveAmmo,
       reloading: weaponState.reloadRemaining > 0,
       reloadRatio,
       alertState: this.alert.state,
       objectives: this.mission.objectives(),
-      interactionPrompt: this.interactionPrompt,
+      interactionKind: this.interactionStatus.kind,
+      interactionPrompt: this.interactionStatus.prompt,
+      interactionProgress: this.interactionStatus.progress,
       tacticalLog: this.tacticalLog,
       debugEnabled: this.debug.enabled,
       enemiesAlive: this.enemyEntities.filter((enemy) => !enemy.dead).length
     };
     eventBus.emit(GameEvents.HudState, state);
+  }
+
+  private weaponNoiseLevel(noiseRadius: number): HudState['weaponNoiseLevel'] {
+    if (noiseRadius < 250) {
+      return 'QUIET';
+    }
+    if (noiseRadius > 720) {
+      return 'BREACH';
+    }
+    return 'LOUD';
   }
 
   private emitMinimap(deltaSeconds: number): void {
@@ -514,10 +535,18 @@ export class GameScene extends Phaser.Scene {
         this.enemyEntities,
         this.doorEntities,
         this.terminalEntities,
+        this.activePickups(),
         this.mission.canExtract(),
+        this.alert.state,
         this.debug.enabled
       )
     );
+  }
+
+  private activePickups(): Pickup[] {
+    return this.pickupGroup
+      .getChildren()
+      .filter((child): child is Pickup => child instanceof Pickup && child.active && child.visible);
   }
 
   private dropSupply(x: number, y: number): void {

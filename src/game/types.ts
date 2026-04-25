@@ -145,15 +145,21 @@ export interface HudState {
   dashRatio: number;
   grenades: number;
   maxGrenades: number;
+  weaponId: WeaponId;
   weaponName: string;
   weaponColor: number;
+  magazineSize: number;
+  weaponFireMode: 'AUTO' | 'SEMI';
+  weaponNoiseLevel: 'QUIET' | 'LOUD' | 'BREACH';
   ammo: number;
   reserveAmmo: number;
   reloading: boolean;
   reloadRatio: number;
   alertState: AlertState;
   objectives: MissionObjective[];
+  interactionKind: 'none' | 'terminal' | 'door' | 'extraction';
   interactionPrompt: string;
+  interactionProgress: number;
   tacticalLog: string[];
   debugEnabled: boolean;
   enemiesAlive: number;
@@ -167,15 +173,25 @@ export interface MinimapActor {
   captain?: boolean;
 }
 
+export interface MinimapPickup extends VectorData {
+  type: PickupType;
+}
+
+export interface MinimapPlayer extends VectorData {
+  facing: VectorData;
+}
+
 export interface MinimapSnapshot {
   width: number;
   height: number;
+  alertState: AlertState;
   walls: RectData[];
   doors: Array<DoorData & { open: boolean }>;
   terminals: Array<TerminalData & { hacked: boolean }>;
+  pickups: MinimapPickup[];
   extraction: RectData;
   canExtract: boolean;
-  player: VectorData;
+  player: MinimapPlayer;
   enemies: MinimapActor[];
   debugEnabled: boolean;
 }

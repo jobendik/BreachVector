@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { COLORS, DEPTHS } from '../game/constants';
 import type { HudState, MinimapSnapshot } from '../game/types';
 import { HealthArmorPanel } from './HealthArmorPanel';
 import { WeaponPanel } from './WeaponPanel';
@@ -6,6 +7,7 @@ import { ObjectivePanel } from './ObjectivePanel';
 import { AlertPanel } from './AlertPanel';
 import { TacticalLog } from './TacticalLog';
 import { Minimap } from './Minimap';
+import { cssColor } from '../utils/colors';
 
 export class HUD {
   private readonly health: HealthArmorPanel;
@@ -14,6 +16,7 @@ export class HUD {
   private readonly alert: AlertPanel;
   private readonly log: TacticalLog;
   private readonly minimap: Minimap;
+  private readonly promptGraphics: Phaser.GameObjects.Graphics;
   private readonly prompt: Phaser.GameObjects.Text;
 
   private messages: string[] = [];
@@ -25,6 +28,10 @@ export class HUD {
     this.alert = new AlertPanel(scene);
     this.log = new TacticalLog(scene);
     this.minimap = new Minimap(scene);
+    this.promptGraphics = scene.add
+      .graphics()
+      .setScrollFactor(0)
+      .setDepth(DEPTHS.ui + 190);
 
     this.prompt = scene.add
       .text(0, 0, '', {
@@ -64,9 +71,10 @@ export class HUD {
     this.objectives.update(state);
     this.alert.update(state);
 
-    this.prompt.setText(
-      state.interactionPrompt || 'WASD move  |  Mouse aim  |  LMB fire  |  RMB grenade  |  E interact  |  Tab debug'
-    );
+    const idlePrompt = 'WASD move  |  Mouse aim  |  LMB fire  |  RMB grenade  |  E interact  |  Tab debug';
+    const promptText = state.interactionPrompt || idlePrompt;
+    this.prompt.setText(promptText);
+    this.drawPromptFrame(state, promptText);
 
     this.log.update(this.messages);
   }
@@ -85,6 +93,7 @@ export class HUD {
     this.scene.scale.off('resize', this.layout, this);
 
     this.prompt.destroy();
+    this.promptGraphics.destroy();
 
     // Optional, only if these classes have destroy() methods:
     // this.health.destroy();
@@ -93,5 +102,58 @@ export class HUD {
     // this.alert.destroy();
     // this.log.destroy();
     // this.minimap.destroy();
+  }
+
+  private drawPromptFrame(state: HudState, promptText: string): void {
+    const width = Math.min(this.scene.scale.width - 80, Math.max(360, promptText.length * 8.2 + 72));
+    const height = 34;
+    const x = this.scene.scale.width / 2 - width / 2;
+    const y = this.scene.scale.height - 58;
+    const active = state.interactionKind !== 'none';
+    const accent = this.promptColor(state);
+
+    this.promptGraphics.clear();
+    this.promptGraphics.fillStyle(COLORS.blacksiteNavy, active ? 0.78 : 0.5);
+    this.promptGraphics.fillRoundedRect(x, y, width, height, 8);
+    this.promptGraphics.lineStyle(1, accent, active ? 0.72 : 0.24);
+    this.promptGraphics.strokeRoundedRect(x, y, width, height, 8);
+
+    if (active) {
+      this.prompt.setColor(cssColor(accent));
+      this.promptGraphics.fillStyle(accent, 0.16);
+      this.promptGraphics.fillRoundedRect(
+        x + 8,
+        y + height - 7,
+        (width - 16) * Phaser.Math.Clamp(state.interactionProgress, 0, 1),
+        3,
+        2
+      );
+      this.drawHoldRing(x + 22, y + height / 2, state.interactionProgress, accent);
+      return;
+    }
+
+    this.prompt.setColor('#e0f2fe');
+  }
+
+  private drawHoldRing(x: number, y: number, ratio: number, color: number): void {
+    this.promptGraphics.lineStyle(2, COLORS.steelDark, 0.86);
+    this.promptGraphics.strokeCircle(x, y, 9);
+    this.promptGraphics.lineStyle(3, color, 0.92);
+    this.promptGraphics.beginPath();
+    this.promptGraphics.arc(x, y, 9, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Phaser.Math.Clamp(ratio, 0, 1));
+    this.promptGraphics.strokePath();
+  }
+
+  private promptColor(state: HudState): number {
+    if (state.interactionKind === 'terminal') {
+      return COLORS.systemCyan;
+    }
+    if (state.interactionKind === 'door') {
+      return state.interactionProgress > 0 ? COLORS.hazardAmberBright : COLORS.alertRed;
+    }
+    if (state.interactionKind === 'extraction') {
+      return state.interactionProgress > 0 ? COLORS.operatorGreenBright : COLORS.hazardAmber;
+    }
+    return COLORS.steelSlate;
   }
 }

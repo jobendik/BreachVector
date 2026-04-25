@@ -5,7 +5,7 @@
 - `BootScene`: minimal startup and handoff.
 - `PreloadScene`: generates all placeholder textures at runtime.
 - `MenuScene`: Phaser-rendered title, briefing, controls, and start action.
-- `GameScene`: owns the active world, level loading, entities, systems, camera, and gameplay loop.
+- `GameScene`: owns active-sector lifecycle, system orchestration, camera behavior, and the gameplay loop.
 - `UIScene`: runs alongside gameplay and renders HUD panels from typed events.
 - `PauseScene`: modal overlay for resume, restart, and menu.
 - `GameOverScene`: restart flow after player death.
@@ -19,23 +19,44 @@
 
 - `InputSystem`: keyboard, pointer, weapon keys, pause, and debug toggles.
 - `WeaponSystem`: firing, reloads, weapon switching support, projectile spawning, recoil, muzzle flashes, and noise.
-- `CollisionSystem`: Arcade Physics colliders and overlap rules.
+- `CollisionSystem`: Arcade Physics colliders, overlap rules, and swept projectile hit checks.
 - `CombatSystem`: actor damage, prop damage, explosions, barrel chain reactions, death callbacks, and feedback.
 - `EnemyAISystem`: patrol, guard, suspicious, search, attack, flank, cover, and reload behavior.
 - `VisionSystem`: line-of-sight, enemy vision checks, visibility polygon support, and fog readability.
-- `MissionSystem`: terminal flags, command target state, extraction unlock, and objective events.
+- `MissionSystem`: terminal flags, command target state, extraction unlock, extraction completion, and objective events.
+- `InteractionSystem`: terminal, door, and extraction prompt interaction logic.
 - `AlertSystem`: hidden, searching, and detected states.
+- `DebugSystem`: debug toggle state, debug event emission, enemy vision overlay, and reused debug labels.
 - `EffectsSystem`: tracers, muzzle flashes, hit markers, floating text, explosions, and camera shake.
 - `AudioSystem`: procedural Web Audio sound cues.
 - `MinimapSystem`: converts world state into HUD-friendly minimap snapshots.
 
+## Level Construction
+
+Static level rendering is split out of `GameScene`:
+
+- `EnvironmentRenderer`: floor grid, walls, visibility graphics, and debug graphics.
+- `LevelBuilder`: doors, terminals, props, pickups, player, enemies, extraction zone, and generated cover points.
+
+`GameScene` creates physics groups, asks these helpers to build the sector, then wires systems together.
+
+## Lifecycle And Cleanup
+
+Scene ownership rules:
+
+- `GameScene` starts each sector from fresh entity arrays, physics groups, systems, mission state, minimap timer, tactical log, and interaction prompt.
+- `UIScene` subscribes to the typed event bus on create and unsubscribes on shutdown.
+- Systems that own listeners, reusable debug labels, colliders, input keys, or audio resources expose `destroy()`.
+- `GameScene` calls system cleanup from its shutdown handler before sector restart, game over, victory, or return to menu.
+- Playwright smoke tests cover boot, start, projectile firing, and pause/restart listener counts.
+
 ## Data-Driven Level Design
 
-Level data lives in `src/data/levels.ts`. Each level defines dimensions, spawn, extraction, walls, doors, terminals, props, pickups, enemies, required terminals, and captain requirements. `GameScene` reads the data and builds the world without hard-coding sector geometry.
+Level data lives in `src/data/levels.ts`. Each level defines dimensions, spawn, extraction, walls, doors, terminals, props, pickups, enemies, required terminals, and captain requirements. `LevelBuilder` reads the data and builds the world without hard-coding sector geometry in `GameScene`.
 
 ## Event Flow
 
-`src/game/events.ts` exposes a typed event bus. `GameScene` emits HUD state, tactical log messages, alert changes, and minimap snapshots. `UIScene` subscribes and delegates rendering to UI classes under `src/ui`.
+`src/game/events.ts` exposes a typed event bus. Systems and scenes emit HUD state, tactical log messages, alert changes, debug changes, mission updates, and minimap snapshots. `UIScene` subscribes and delegates rendering to UI classes under `src/ui`.
 
 ## Weapons
 

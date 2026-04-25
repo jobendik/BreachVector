@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTHS, TextureKeys } from '../game/constants';
+import { COLORS, DEPTHS, TextureKeys } from '../game/constants';
 import type { DamageSource, PropData, PropKind, RectData } from '../game/types';
 
 export class Prop extends Phaser.Physics.Arcade.Sprite {
@@ -8,6 +8,7 @@ export class Prop extends Phaser.Physics.Arcade.Sprite {
   readonly solid = true;
   readonly blocksLineOfSight: boolean;
   readonly explosive: boolean;
+  private readonly idleTween?: Phaser.Tweens.Tween;
   health: number;
   dead = false;
 
@@ -30,6 +31,16 @@ export class Prop extends Phaser.Physics.Arcade.Sprite {
     body.setOffset(this.width / 2 - w / 2, this.height / 2 - h / 2);
     this.setDisplaySize(w, h);
     this.setDepth(DEPTHS.props);
+    if (this.propKind === 'barrel') {
+      this.idleTween = scene.tweens.add({
+        targets: this,
+        alpha: 0.78,
+        duration: 720,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
   }
 
   takeDamage(amount: number, _source: DamageSource): boolean {
@@ -37,12 +48,17 @@ export class Prop extends Phaser.Physics.Arcade.Sprite {
       return false;
     }
     this.health -= amount;
-    this.setTint(this.propKind === 'barrel' ? 0xf97316 : 0x94a3b8);
+    this.setTint(this.propKind === 'barrel' ? COLORS.hazardOrange : COLORS.steelLight);
     if (this.health <= 0) {
       this.dead = true;
       this.disableBody(true, true);
       return true;
     }
     return false;
+  }
+
+  destroy(fromScene?: boolean): void {
+    this.idleTween?.stop();
+    super.destroy(fromScene);
   }
 }
