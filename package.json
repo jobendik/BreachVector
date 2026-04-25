@@ -1,0 +1,25 @@
+{
+  "name": "breach-vector-blacksite",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A Phaser 3 + TypeScript top-down tactical shooter prototype.",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "check": "npm run typecheck && npm run lint && npm run build"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "eslint": "^9.39.4",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^8.59.0",
+    "vite": "^8.0.10"
+  }
+}
