@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { levels } from '../data/levels';
 import { COLORS, GAME_TITLE, GAME_VERSION } from '../game/constants';
+import { completedSectorCount, loadProgress, nextIncompleteLevelIndex } from '../game/progress';
 import { cssColor } from '../utils/colors';
 
 type MenuPanel = 'briefing' | 'controls' | 'settings' | 'credits';
@@ -25,12 +26,16 @@ export class MenuScene extends Phaser.Scene {
   private selectedMode: OperationMode = 'DEMO';
   private buttons: MenuButton[] = [];
   private modeButtons: MenuButton[] = [];
+  private progress = loadProgress();
 
   constructor() {
     super('MenuScene');
   }
 
   create(): void {
+    this.progress = loadProgress();
+    this.buttons = [];
+    this.modeButtons = [];
     this.cameras.main.setBackgroundColor(COLORS.blacksiteNavy);
     this.backdrop = this.add.graphics().setDepth(-20);
     this.panelGraphics = this.add.graphics().setDepth(-10);
@@ -97,7 +102,12 @@ export class MenuScene extends Phaser.Scene {
 
   private createButtons(): void {
     this.buttons = [
-      this.button('START OPERATION', () => this.startOperation(), COLORS.operatorGreenBright, COLORS.blacksiteNavy),
+      this.button(
+        this.primaryActionLabel(),
+        () => this.startOperation(),
+        COLORS.operatorGreenBright,
+        COLORS.blacksiteNavy
+      ),
       this.button('CONTROLS', () => this.setPanel('controls'), COLORS.systemCyan, COLORS.textPrimary),
       this.button('SETTINGS', () => this.scene.launch('SettingsScene'), COLORS.hazardAmberBright, COLORS.textPrimary),
       this.button('CREDITS', () => this.setPanel('credits'), COLORS.energyVioletBright, COLORS.textPrimary)
@@ -154,7 +164,8 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private startOperation(): void {
-    this.scene.start('GameScene', { levelIndex: 0 });
+    this.progress = loadProgress();
+    this.scene.start('GameScene', { levelIndex: nextIncompleteLevelIndex(this.progress) });
   }
 
   private renderPanel(): void {
@@ -195,7 +206,8 @@ export class MenuScene extends Phaser.Scene {
       title: 'OPERATOR BRIEFING',
       body:
         `${levels[0].briefing}\n\n` +
-        'Mission loop: infiltrate, hack terminal systems, open locked routes, neutralize command, and extract before the blacksite fully mobilizes.'
+        'Mission loop: infiltrate, hack terminal systems, open locked routes, neutralize command, and extract before the blacksite fully mobilizes.' +
+        this.progressSummary()
     };
   }
 
@@ -283,7 +295,8 @@ export class MenuScene extends Phaser.Scene {
     for (const button of this.buttons) {
       const active =
         button.label.toLowerCase() === this.activePanel ||
-        (button.label === 'START OPERATION' && this.activePanel === 'briefing');
+        ((button.label === 'START OPERATION' || button.label === 'CONTINUE OPERATION') &&
+          this.activePanel === 'briefing');
       const color = active ? COLORS.operatorGreenBright : COLORS.systemCyan;
       button.bg.setFillStyle(active ? color : COLORS.blacksitePanelLight, active ? 0.78 : 0.94);
       button.bg.setStrokeStyle(2, color, active ? 0.9 : 0.5);
@@ -301,6 +314,19 @@ export class MenuScene extends Phaser.Scene {
       button.bg.setStrokeStyle(2, color, active ? 0.95 : 0.44);
       button.text.setColor(cssColor(active ? COLORS.blacksiteNavy : COLORS.textPrimary));
     }
+  }
+
+  private primaryActionLabel(): string {
+    return completedSectorCount(this.progress) > 0 ? 'CONTINUE OPERATION' : 'START OPERATION';
+  }
+
+  private progressSummary(): string {
+    const completed = completedSectorCount(this.progress);
+    if (completed === 0) {
+      return '';
+    }
+    const next = levels[nextIncompleteLevelIndex(this.progress)];
+    return `\n\nProgress: ${completed}/${levels.length} sectors cleared. Next operation: ${next.name}.`;
   }
 
   private textStyle(size: number, color: string, weight: string): Phaser.Types.GameObjects.Text.TextStyle {

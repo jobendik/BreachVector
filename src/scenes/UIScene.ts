@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
 import { GameEvents, eventBus } from '../game/events';
-import type { HudState, MinimapSnapshot } from '../game/types';
+import type { HudState, MinimapSnapshot, TacticalLogEntry } from '../game/types';
 import { HUD } from '../ui/HUD';
 
 export class UIScene extends Phaser.Scene {
   private hud?: HUD;
   private readonly onHud = (state: HudState) => this.hud?.updateState(state);
-  private readonly onLog = (payload: { message: string }) => this.hud?.pushLog(payload.message);
+  private readonly onLog = (entry: TacticalLogEntry) => this.hud?.pushLog(entry);
   private readonly onMinimap = (snapshot: MinimapSnapshot) => this.hud?.updateMinimap(snapshot);
 
   constructor() {

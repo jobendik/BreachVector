@@ -1,6 +1,6 @@
 import { loadSettings } from '../game/settings';
 
-type SoundId =
+export type SoundId =
   | 'pistol'
   | 'rifle'
   | 'shotgun'
@@ -11,7 +11,11 @@ type SoundId =
   | 'hit'
   | 'interact'
   | 'pickup'
+  | 'pickupMedkit'
+  | 'pickupAmmo'
+  | 'pickupGrenade'
   | 'reload'
+  | 'grenadeBounce'
   | 'alert'
   | 'complete';
 
@@ -38,7 +42,13 @@ export class AudioSystem {
     }
     const settings = loadSettings();
     const channelVolume =
-      id === 'alert' || id === 'complete' || id === 'pickup' || id === 'interact'
+      id === 'alert' ||
+      id === 'complete' ||
+      id === 'pickup' ||
+      id === 'pickupMedkit' ||
+      id === 'pickupAmmo' ||
+      id === 'pickupGrenade' ||
+      id === 'interact'
         ? settings.uiVolume
         : settings.sfxVolume;
     const volume = settings.masterVolume * channelVolume;
@@ -113,6 +123,35 @@ export class AudioSystem {
       oscillator.frequency.exponentialRampToValueAtTime(35, now + 0.09);
       gain.gain.linearRampToValueAtTime(0.08 * volume, now + 0.003);
       stop(0.1);
+    } else if (id === 'grenadeBounce') {
+      oscillator.type = 'triangle';
+      filter.frequency.setValueAtTime(1600, now);
+      oscillator.frequency.setValueAtTime(190, now);
+      oscillator.frequency.exponentialRampToValueAtTime(78, now + 0.12);
+      gain.gain.linearRampToValueAtTime(0.035 * volume, now + 0.004);
+      stop(0.14);
+    } else if (id === 'pickupMedkit') {
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(360, now);
+      oscillator.frequency.linearRampToValueAtTime(720, now + 0.08);
+      oscillator.frequency.linearRampToValueAtTime(920, now + 0.18);
+      gain.gain.linearRampToValueAtTime(0.075 * volume, now + 0.004);
+      stop(0.22);
+    } else if (id === 'pickupAmmo') {
+      oscillator.type = 'square';
+      filter.frequency.setValueAtTime(2400, now);
+      oscillator.frequency.setValueAtTime(260, now);
+      oscillator.frequency.linearRampToValueAtTime(420, now + 0.05);
+      oscillator.frequency.linearRampToValueAtTime(310, now + 0.14);
+      gain.gain.linearRampToValueAtTime(0.055 * volume, now + 0.004);
+      stop(0.18);
+    } else if (id === 'pickupGrenade') {
+      oscillator.type = 'triangle';
+      oscillator.frequency.setValueAtTime(180, now);
+      oscillator.frequency.linearRampToValueAtTime(540, now + 0.09);
+      filter.frequency.setValueAtTime(1900, now);
+      gain.gain.linearRampToValueAtTime(0.065 * volume, now + 0.004);
+      stop(0.2);
     } else if (id === 'interact' || id === 'pickup' || id === 'reload' || id === 'complete') {
       oscillator.type = 'sine';
       oscillator.frequency.setValueAtTime(id === 'reload' ? 240 : 420, now);

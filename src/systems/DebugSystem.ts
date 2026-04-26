@@ -65,11 +65,24 @@ export class DebugSystem {
       this.graphics.fillCircle(enemy.x, enemy.y - 28, 3);
 
       this.drawNavPath(enemy);
+      this.drawCommandDebug(enemy);
 
       visibleLabels.add(enemy.actorId);
       this.updateLabel(enemy);
     }
     this.hideLabels(visibleLabels);
+  }
+
+  private drawCommandDebug(enemy: Enemy): void {
+    if (enemy.role === 'captain' && enemy.commandPulseTimer > 0) {
+      this.graphics.lineStyle(2, COLORS.alertRed, 0.42);
+      this.graphics.strokeCircle(enemy.x, enemy.y, 520 * (1 - enemy.commandPulseTimer / 1.05));
+    }
+    if (enemy.commandBoostTimer <= 0) {
+      return;
+    }
+    this.graphics.fillStyle(COLORS.hazardAmberBright, 0.78);
+    this.graphics.fillTriangle(enemy.x - 6, enemy.y - 48, enemy.x + 6, enemy.y - 48, enemy.x, enemy.y - 58);
   }
 
   drawSuspicionIndicators(enemies: Enemy[]): void {

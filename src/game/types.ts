@@ -24,6 +24,17 @@ export type PickupType = 'medkit' | 'ammo' | 'grenade';
 
 export type PropKind = 'crate' | 'barrel';
 
+export type TacticalLogCategory = 'objective' | 'combat' | 'alert' | 'pickup' | 'system';
+
+export type TacticalLogEmphasis = 'normal' | 'critical';
+
+export interface TacticalLogEntry {
+  message: string;
+  category: TacticalLogCategory;
+  emphasis?: TacticalLogEmphasis;
+  count?: number;
+}
+
 export interface VectorData {
   x: number;
   y: number;
@@ -137,6 +148,12 @@ export interface MissionObjective {
   emphasis?: 'normal' | 'warning' | 'critical' | 'success';
 }
 
+export interface EnemyAwarenessCounts {
+  unaware: number;
+  suspicious: number;
+  engaged: number;
+}
+
 export interface HudState {
   health: number;
   maxHealth: number;
@@ -157,13 +174,17 @@ export interface HudState {
   reloadRatio: number;
   alertState: AlertState;
   enemySuspicion: number;
+  lastSeenSeconds?: number;
+  enemyAwareness: EnemyAwarenessCounts;
   objectives: MissionObjective[];
   interactionKind: 'none' | 'terminal' | 'door' | 'extraction';
   interactionPrompt: string;
   interactionProgress: number;
-  tacticalLog: string[];
+  tacticalLog: TacticalLogEntry[];
   debugEnabled: boolean;
   enemiesAlive: number;
+  captainHealthRatio?: number;
+  captainCommandActive: boolean;
 }
 
 export interface MinimapActor {
@@ -182,9 +203,12 @@ export interface MinimapPlayer extends VectorData {
   facing: VectorData;
 }
 
+export type MinimapZoomMode = 'sector' | 'local';
+
 export interface MinimapSnapshot {
   width: number;
   height: number;
+  zoomMode: MinimapZoomMode;
   alertState: AlertState;
   walls: RectData[];
   doors: Array<DoorData & { open: boolean }>;

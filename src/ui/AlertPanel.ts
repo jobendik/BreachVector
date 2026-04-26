@@ -49,22 +49,36 @@ export class AlertPanel {
     this.drawAnimatedBorder(x, y, width, height, color, state.alertState);
     this.graphics.fillStyle(color, state.alertState === 'detected' ? pulse : 0.9);
     this.graphics.fillRect(x, y, width, 4);
+    this.drawCaptainBar(x + 16, y + 8, width - 62, state);
     this.drawSuspicionMeter(x + 16, y + height - 14, width - 62, state.enemySuspicion);
+    this.drawSirenWaveform(x + width - 82, y + 17, color, state.alertState);
     this.drawAlertGlyph(x + width - 32, y + 42, color, state.alertState);
     this.title.setText(state.alertState.toUpperCase()).setColor(cssColor(color));
-    this.detail.setText(
-      state.debugEnabled
-        ? `DEBUG ACTIVE - ${state.enemiesAlive} HOSTILES`
-        : `${this.detailFor(state)} - ${state.enemiesAlive} HOSTILES`
-    );
+    this.detail.setText(state.debugEnabled ? `DEBUG ACTIVE - ${this.awarenessFor(state)}` : this.detailFor(state));
     this.detail.setColor(cssColor(state.alertState === 'hidden' ? COLORS.steelLight : color));
   }
 
   private detailFor(state: HudState): string {
-    if (state.alertState === 'detected') return 'emergency lights active';
-    if (state.alertState === 'searching') return `awareness ${Math.round(state.enemySuspicion * 100)}%`;
-    if (state.enemySuspicion > 0.08) return `awareness ${Math.round(state.enemySuspicion * 100)}%`;
-    return 'silent approach';
+    const awareness = this.awarenessFor(state);
+    if (state.alertState === 'detected') return `emergency active - ${awareness}`;
+    if (state.alertState === 'searching') {
+      const lastSeen = this.lastSeenFor(state);
+      return `${lastSeen ?? `awareness ${Math.round(state.enemySuspicion * 100)}%`} - ${awareness}`;
+    }
+    if (state.enemySuspicion > 0.08) return `awareness ${Math.round(state.enemySuspicion * 100)}% - ${awareness}`;
+    return `silent approach - ${awareness}`;
+  }
+
+  private awarenessFor(state: HudState): string {
+    const counts = state.enemyAwareness;
+    return `unaware ${counts.unaware} / susp ${counts.suspicious} / engaged ${counts.engaged}`;
+  }
+
+  private lastSeenFor(state: HudState): string | undefined {
+    if (state.lastSeenSeconds === undefined || !Number.isFinite(state.lastSeenSeconds)) {
+      return undefined;
+    }
+    return `last seen ${Math.max(0, Math.floor(state.lastSeenSeconds))}s`;
   }
 
   private drawSuspicionMeter(x: number, y: number, width: number, suspicion: number): void {
@@ -77,6 +91,41 @@ export class AlertPanel {
     const color = ratio > 0.72 ? COLORS.alertRed : ratio > 0.3 ? COLORS.hazardOrange : COLORS.hazardAmberBright;
     this.graphics.fillStyle(color, 0.9);
     this.graphics.fillRoundedRect(x, y, width * ratio, 4, 2);
+  }
+
+  private drawCaptainBar(x: number, y: number, width: number, state: HudState): void {
+    if (state.captainHealthRatio === undefined) {
+      return;
+    }
+    const ratio = Phaser.Math.Clamp(state.captainHealthRatio, 0, 1);
+    const color = state.captainCommandActive ? COLORS.hazardAmberBright : COLORS.alertRed;
+    this.graphics.fillStyle(COLORS.black, 0.38);
+    this.graphics.fillRoundedRect(x, y, width, 5, 2);
+    this.graphics.fillStyle(color, state.captainCommandActive ? 0.95 : 0.82);
+    this.graphics.fillRoundedRect(x, y, width * ratio, 5, 2);
+    if (state.captainCommandActive) {
+      this.graphics.lineStyle(1, color, 0.8);
+      this.graphics.strokeRoundedRect(x - 2, y - 2, width + 4, 9, 3);
+    }
+  }
+
+  private drawSirenWaveform(x: number, y: number, color: number, state: HudState['alertState']): void {
+    if (state !== 'detected') {
+      return;
+    }
+
+    const t = Date.now() / 100;
+    this.graphics.lineStyle(2, color, 0.72 + Math.sin(t) * 0.14);
+    for (let i = 0; i < 5; i += 1) {
+      const barX = x + i * 7;
+      const height = 5 + Math.abs(Math.sin(t + i * 0.85)) * 14;
+      this.graphics.lineBetween(barX, y + 10 - height / 2, barX, y + 10 + height / 2);
+    }
+
+    this.graphics.lineStyle(1, COLORS.hazardAmberBright, 0.44);
+    this.graphics.beginPath();
+    this.graphics.arc(x + 17, y + 10, 28 + Math.sin(t * 1.4) * 3, -0.42, 0.42);
+    this.graphics.strokePath();
   }
 
   private drawAnimatedBorder(

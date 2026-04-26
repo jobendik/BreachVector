@@ -26,6 +26,9 @@ export class Enemy extends Actor {
   navTargetX = 0;
   navTargetY = 0;
   navRecomputeTimer = 0;
+  commandCooldown = 0;
+  commandPulseTimer = 0;
+  commandBoostTimer = 0;
 
   constructor(scene: Phaser.Scene, spawn: EnemySpawnData) {
     const definition = enemyDefinitions[spawn.role];
@@ -44,6 +47,7 @@ export class Enemy extends Actor {
       (point: VectorData) => new Phaser.Math.Vector2(point.x, point.y)
     );
     this.spawnFacing = spawn.angle ?? 0;
+    this.commandCooldown = this.role === 'captain' ? Phaser.Math.FloatBetween(2.2, 3.6) : 0;
     this.setRotation(this.spawnFacing);
     this.facing.set(Math.cos(this.spawnFacing), Math.sin(this.spawnFacing));
     this.setDepth(DEPTHS.actors);
@@ -86,6 +90,9 @@ export class Enemy extends Actor {
     this.reloadRemaining = Math.max(0, this.reloadRemaining - deltaSeconds);
     this.lostSightTimer = Math.max(0, this.lostSightTimer - deltaSeconds);
     this.navRecomputeTimer = Math.max(0, this.navRecomputeTimer - deltaSeconds);
+    this.commandCooldown = Math.max(0, this.commandCooldown - deltaSeconds);
+    this.commandPulseTimer = Math.max(0, this.commandPulseTimer - deltaSeconds);
+    this.commandBoostTimer = Math.max(0, this.commandBoostTimer - deltaSeconds);
     if (this.searchTimer > 0) {
       this.searchTimer = Math.max(0, this.searchTimer - deltaSeconds);
     }

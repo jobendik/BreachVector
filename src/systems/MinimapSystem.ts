@@ -2,7 +2,7 @@ import type { Enemy } from '../entities/Enemy';
 import type { Door } from '../entities/Door';
 import type { Pickup } from '../entities/Pickup';
 import type { Terminal } from '../entities/Terminal';
-import type { AlertState, LevelData, MinimapSnapshot } from '../game/types';
+import type { AlertState, LevelData, MinimapSnapshot, MinimapZoomMode } from '../game/types';
 
 export class MinimapSystem {
   constructor(private readonly level: LevelData) {}
@@ -15,11 +15,13 @@ export class MinimapSystem {
     pickups: Pickup[],
     canExtract: boolean,
     alertState: AlertState,
-    debugEnabled: boolean
+    debugEnabled: boolean,
+    zoomMode: MinimapZoomMode
   ): MinimapSnapshot {
     return {
       width: this.level.width,
       height: this.level.height,
+      zoomMode,
       alertState,
       walls: this.level.walls,
       doors: doors.map((door) => ({ ...door.rect, id: door.doorId, locked: door.locked, open: door.open })),

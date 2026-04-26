@@ -1,18 +1,24 @@
 import Phaser from 'phaser';
 import { levels, getLevel } from '../data/levels';
 import { missionText } from '../data/missionText';
-import { DEPTHS, PLAYER_BALANCE } from '../game/constants';
+import { DEPTHS, PLAYER_BALANCE, WORLD_BALANCE } from '../game/constants';
 import { GameEvents, eventBus } from '../game/events';
 import type {
   AlertState,
+  EnemyAwarenessCounts,
   HudState,
   LevelData,
+  MinimapZoomMode,
   PickupType,
   RectData,
   SectorGrade,
   SectorReport,
-  StealthRating
+  StealthRating,
+  TacticalLogCategory,
+  TacticalLogEmphasis,
+  TacticalLogEntry
 } from '../game/types';
+import { EnemyState } from '../game/types';
 import { Door } from '../entities/Door';
 import { Enemy } from '../entities/Enemy';
 import type { ExtractionZone } from '../entities/ExtractionZone';
@@ -78,9 +84,10 @@ export class GameScene extends Phaser.Scene {
   debug!: DebugSystem;
 
   private visibilityGraphics!: Phaser.GameObjects.Graphics;
+  private grenadeAimGraphics!: Phaser.GameObjects.Graphics;
   private extractionZone!: ExtractionZone;
   private interactionStatus: InteractionStatus = { kind: 'none', prompt: '', progress: 0 };
-  private tacticalLog: string[] = [];
+  private tacticalLog: TacticalLogEntry[] = [];
   private minimapTimer = 0;
   private sectorEnding = false;
   private sectorStartTime = 0;
@@ -91,6 +98,8 @@ export class GameScene extends Phaser.Scene {
   private damageTaken = 0;
   private highestAlertState: AlertState = 'hidden';
   private killBreakdown: Record<string, number> = {};
+  private lowArmorLogged = false;
+  minimapZoomMode: MinimapZoomMode = 'sector';
 
   constructor() {
     super('GameScene');
@@ -111,6 +120,8 @@ export class GameScene extends Phaser.Scene {
     this.damageTaken = 0;
     this.highestAlertState = 'hidden';
     this.killBreakdown = {};
+    this.lowArmorLogged = false;
+    this.minimapZoomMode = 'sector';
 
     this.physics.world.setBounds(0, 0, this.level.width, this.level.height);
     this.cameras.main.setBounds(0, 0, this.level.width, this.level.height);
@@ -128,8 +139,8 @@ export class GameScene extends Phaser.Scene {
 
     this.scene.launch('UIScene');
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanupScene, this);
-    this.log(`Sector: ${this.level.name}`);
-    this.log(this.level.briefing);
+    this.log(`Sector: ${this.level.name}`, 'system');
+    this.log(this.level.briefing, 'objective');
     this.mission.emit();
   }
 
@@ -154,7 +165,11 @@ export class GameScene extends Phaser.Scene {
 
     if (this.inputSystem.debugPressed()) {
       const debugEnabled = this.debug.toggle();
-      this.log(debugEnabled ? 'Debug overlay enabled' : 'Debug overlay disabled');
+      this.log(debugEnabled ? 'Debug overlay enabled' : 'Debug overlay disabled', 'system');
+    }
+
+    if (this.inputSystem.minimapZoomPressed()) {
+      this.toggleMinimapZoomMode();
     }
 
     const pointerWorld = this.inputSystem.pointerWorld(this.cameras.main);
@@ -166,7 +181,7 @@ export class GameScene extends Phaser.Scene {
 
     const weaponIndex = this.inputSystem.weaponPressed();
     if (weaponIndex !== null && this.player.switchWeapon(weaponIndex)) {
-      this.log(`Weapon: ${this.player.selectedWeapon.definition.displayName}`);
+      this.log(`Weapon: ${this.player.selectedWeapon.definition.displayName}`, 'system');
     }
 
     if (this.inputSystem.dashPressed() && this.player.tryDash(movement)) {
@@ -202,6 +217,7 @@ export class GameScene extends Phaser.Scene {
     this.enemyAI.update(deltaSeconds, this.debug.enabled);
     this.debug.drawEnemyOverlay(this.enemyEntities);
     this.debug.drawSuspicionIndicators(this.enemyEntities);
+    this.drawGrenadeAim(pointerWorld);
     this.updateProjectiles(deltaSeconds);
     this.updateGrenades(deltaSeconds);
     this.alert.update(deltaSeconds);
@@ -267,8 +283,53 @@ export class GameScene extends Phaser.Scene {
     return this.vision.hasLineOfSight(a, b);
   }
 
+  grenadeThreatenedActors(grenade: Grenade): Array<Player | Enemy> {
+    const origin = new Phaser.Math.Vector2(grenade.x, grenade.y);
+    return [this.player, ...this.enemyEntities].filter((actor) => {
+      if (actor.dead) {
+        return false;
+      }
+      const distance = Phaser.Math.Distance.Between(origin.x, origin.y, actor.x, actor.y);
+      return distance <= grenade.radius && this.hasLineOfSight(origin, actor.positionVector);
+    });
+  }
+
+  enemyAwarenessCounts(): EnemyAwarenessCounts {
+    const counts: EnemyAwarenessCounts = { unaware: 0, suspicious: 0, engaged: 0 };
+    for (const enemy of this.enemyEntities) {
+      if (enemy.dead) {
+        continue;
+      }
+      if (
+        enemy.aiState === EnemyState.Attack ||
+        enemy.aiState === EnemyState.Flank ||
+        enemy.aiState === EnemyState.Cover ||
+        enemy.aiState === EnemyState.Reload ||
+        enemy.suspicion >= 1
+      ) {
+        counts.engaged += 1;
+      } else if (
+        enemy.aiState === EnemyState.Search ||
+        enemy.aiState === EnemyState.Suspicious ||
+        enemy.suspicion > 0.08
+      ) {
+        counts.suspicious += 1;
+      } else {
+        counts.unaware += 1;
+      }
+    }
+    return counts;
+  }
+
+  toggleMinimapZoomMode(): MinimapZoomMode {
+    this.minimapZoomMode = this.minimapZoomMode === 'sector' ? 'local' : 'sector';
+    this.minimapTimer = 0;
+    this.log(`Minimap: ${this.minimapZoomMode.toUpperCase()}`, 'system');
+    return this.minimapZoomMode;
+  }
+
   onEnemyKilled(enemy: Enemy): void {
-    this.log(`${enemy.config.displayName} neutralized`);
+    this.log(`${enemy.config.displayName} neutralized`, 'combat');
     this.enemiesKilled += 1;
     const sourceLabel = enemy.lastDamageSource?.label ?? 'Unknown';
     this.killBreakdown[sourceLabel] = (this.killBreakdown[sourceLabel] ?? 0) + 1;
@@ -285,7 +346,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.sectorEnding = true;
-    this.log(missionText.gameOver);
+    this.log(missionText.gameOver, 'system');
     const report = this.createSectorReport(this.player.lastDamageSource);
     this.time.delayedCall(650, () => {
       this.scene.stop('UIScene');
@@ -293,10 +354,25 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  log(message: string): void {
-    this.tacticalLog.push(message);
+  log(message: string, category: TacticalLogCategory = 'system', emphasis: TacticalLogEmphasis = 'normal'): void {
+    const entry: TacticalLogEntry = emphasis === 'critical' ? { message, category, emphasis } : { message, category };
+    const previous = this.tacticalLog.at(-1);
+    if (
+      previous?.message === message &&
+      previous.category === category &&
+      (previous.emphasis ?? 'normal') === emphasis
+    ) {
+      previous.count = (previous.count ?? 1) + 1;
+    } else {
+      this.tacticalLog.push(entry);
+    }
     this.tacticalLog = this.tacticalLog.slice(-8);
-    eventBus.emit(GameEvents.TacticalLog, { message });
+    eventBus.emit(
+      GameEvents.TacticalLog,
+      previous?.message === message && previous.category === category && (previous.emphasis ?? 'normal') === emphasis
+        ? previous
+        : entry
+    );
   }
 
   private createGroups(): void {
@@ -320,6 +396,7 @@ export class GameScene extends Phaser.Scene {
   private renderEnvironment(): void {
     const environment = new EnvironmentRenderer(this).render(this.level, this.wallGroup);
     this.visibilityGraphics = environment.visibilityGraphics;
+    this.grenadeAimGraphics = this.add.graphics().setDepth(DEPTHS.effects - 2);
     this.debug = new DebugSystem(environment.debugGraphics);
   }
 
@@ -355,7 +432,7 @@ export class GameScene extends Phaser.Scene {
       player: this.player,
       extractionZone: this.extractionZone,
       audio: this.audio,
-      log: (message) => this.log(message),
+      log: (message, category, emphasis) => this.log(message, category, emphasis),
       onSectorComplete: () => this.completeSector()
     });
     this.vision = new VisionSystem(this);
@@ -399,7 +476,7 @@ export class GameScene extends Phaser.Scene {
       audio: this.audio,
       effects: this.effects,
       emitNoise: (point, radius, important) => this.emitNoise(point, radius, important),
-      log: (message) => this.log(message),
+      log: (message, category, emphasis) => this.log(message, category, emphasis),
       onDoorOpened: () => this.pathfinding.applyDoors(this.getClosedDoorRects())
     });
 
@@ -410,7 +487,8 @@ export class GameScene extends Phaser.Scene {
       vision: this.vision,
       alert: this.alert,
       weapons: this.weapons,
-      pathfinding: this.pathfinding
+      pathfinding: this.pathfinding,
+      log: (message, category, emphasis) => this.log(message, category, emphasis)
     });
 
     this.collisions = new CollisionSystem({
@@ -428,7 +506,7 @@ export class GameScene extends Phaser.Scene {
       grenades: this.grenadeGroup,
       pickups: this.pickupGroup,
       combat: this.combat,
-      log: (message) => this.log(message),
+      log: (message, category, emphasis) => this.log(message, category, emphasis),
       effects: this.effects,
       audio: this.audio
     });
@@ -475,11 +553,74 @@ export class GameScene extends Phaser.Scene {
       if (!grenade.active) {
         continue;
       }
+      this.drawGrenadeFuse(grenade);
       if (grenade.update(deltaSeconds)) {
         const point = new Phaser.Math.Vector2(grenade.x, grenade.y);
         grenade.destroy();
         this.combat.explosion(point, grenade.radius, grenade.damage, grenade.ownerTeam);
       }
+    }
+  }
+
+  private drawGrenadeAim(pointerWorld: Phaser.Math.Vector2): void {
+    this.grenadeAimGraphics.clear();
+    if (!this.inputSystem.secondaryHeld() || this.player.grenades <= 0) {
+      return;
+    }
+
+    const preview = this.weapons.grenadePreview(this.player, pointerWorld);
+    const target = preview.target;
+    const radius = 22 + Math.sin(this.time.now / 90) * 2;
+    this.grenadeAimGraphics.lineStyle(1, 0xf97316, 0.42);
+    this.grenadeAimGraphics.lineBetween(this.player.x, this.player.y, target.x, target.y);
+    this.grenadeAimGraphics.lineStyle(2, 0xf97316, 0.8);
+    this.grenadeAimGraphics.strokeCircle(target.x, target.y, radius);
+    this.grenadeAimGraphics.lineStyle(1, 0xfed7aa, 0.56);
+    this.grenadeAimGraphics.strokeCircle(target.x, target.y, 170);
+    this.grenadeAimGraphics.fillStyle(0xf97316, 0.8);
+    this.grenadeAimGraphics.fillTriangle(
+      target.x,
+      target.y - 8,
+      target.x - 7,
+      target.y + 5,
+      target.x + 7,
+      target.y + 5
+    );
+  }
+
+  private drawGrenadeFuse(grenade: Grenade): void {
+    const ratio = Phaser.Math.Clamp(grenade.fuseRemaining / WORLD_BALANCE.grenadeFuse, 0, 1);
+    this.drawGrenadeWarning(grenade, ratio);
+    const arcEnd = -Math.PI / 2 + Math.PI * 2 * ratio;
+    this.grenadeAimGraphics.lineStyle(3, ratio < 0.32 ? 0xef4444 : 0xf59e0b, 0.9);
+    this.grenadeAimGraphics.beginPath();
+    this.grenadeAimGraphics.arc(grenade.x, grenade.y - 18, 8, -Math.PI / 2, arcEnd);
+    this.grenadeAimGraphics.strokePath();
+  }
+
+  private drawGrenadeWarning(grenade: Grenade, fuseRatio: number): void {
+    const threatenedActors = this.grenadeThreatenedActors(grenade);
+    if (fuseRatio > 0.82 && threatenedActors.length === 0) {
+      return;
+    }
+
+    const urgency = 1 - fuseRatio;
+    const playerThreatened = threatenedActors.some((actor) => actor.team === 'player');
+    const color = playerThreatened ? 0xef4444 : 0xf97316;
+    const alpha = Phaser.Math.Clamp(0.16 + urgency * 0.58 + threatenedActors.length * 0.05, 0.18, 0.74);
+    const pulse = Math.sin(this.time.now / 70) * 4;
+
+    this.grenadeAimGraphics.lineStyle(2, color, alpha);
+    this.grenadeAimGraphics.strokeCircle(grenade.x, grenade.y, grenade.radius + pulse);
+    this.grenadeAimGraphics.lineStyle(1, 0xfed7aa, alpha * 0.7);
+    this.grenadeAimGraphics.strokeCircle(grenade.x, grenade.y, Math.max(18, grenade.radius * 0.55 + pulse * 0.5));
+
+    for (const actor of threatenedActors) {
+      const markerY = actor.y - actor.collisionRadius - 18;
+      this.grenadeAimGraphics.fillStyle(actor.team === 'player' ? 0xef4444 : 0xf97316, 0.9);
+      this.grenadeAimGraphics.fillTriangle(actor.x, markerY - 9, actor.x - 8, markerY + 7, actor.x + 8, markerY + 7);
+      this.grenadeAimGraphics.lineStyle(2, 0xfef2f2, 0.82);
+      this.grenadeAimGraphics.strokeTriangle(actor.x, markerY - 9, actor.x - 8, markerY + 7, actor.x + 8, markerY + 7);
     }
   }
 
@@ -582,6 +723,8 @@ export class GameScene extends Phaser.Scene {
 
   private emitHudState(): void {
     const weaponState = this.player.selectedWeapon;
+    const captain = this.enemyEntities.find((enemy) => enemy.role === 'captain' && !enemy.dead);
+    this.updateLowArmorWarning();
     const reloadRatio =
       weaponState.reloadRemaining > 0 ? 1 - weaponState.reloadRemaining / weaponState.definition.reloadTime : 0;
     const state: HudState = {
@@ -604,13 +747,17 @@ export class GameScene extends Phaser.Scene {
       reloadRatio,
       alertState: this.alert.state,
       enemySuspicion: Math.max(0, ...this.enemyEntities.filter((enemy) => !enemy.dead).map((enemy) => enemy.suspicion)),
+      lastSeenSeconds: this.alert.lastSeenSeconds,
+      enemyAwareness: this.enemyAwarenessCounts(),
       objectives: this.mission.objectives(),
       interactionKind: this.interactionStatus.kind,
       interactionPrompt: this.interactionStatus.prompt,
       interactionProgress: this.interactionStatus.progress,
       tacticalLog: this.tacticalLog,
       debugEnabled: this.debug.enabled,
-      enemiesAlive: this.enemyEntities.filter((enemy) => !enemy.dead).length
+      enemiesAlive: this.enemyEntities.filter((enemy) => !enemy.dead).length,
+      captainHealthRatio: captain ? captain.health / captain.maxHealth : undefined,
+      captainCommandActive: this.enemyEntities.some((enemy) => !enemy.dead && enemy.commandPulseTimer > 0)
     };
     eventBus.emit(GameEvents.HudState, state);
   }
@@ -623,6 +770,16 @@ export class GameScene extends Phaser.Scene {
       return 'BREACH';
     }
     return 'LOUD';
+  }
+
+  private updateLowArmorWarning(): void {
+    const armorRatio = this.player.armor / Math.max(1, this.player.maxArmor);
+    if (!this.lowArmorLogged && armorRatio <= 0.25) {
+      this.lowArmorLogged = true;
+      this.log('LOW ARMOR', 'combat', 'critical');
+    } else if (this.lowArmorLogged && armorRatio >= 0.45) {
+      this.lowArmorLogged = false;
+    }
   }
 
   private emitMinimap(deltaSeconds: number): void {
@@ -641,7 +798,8 @@ export class GameScene extends Phaser.Scene {
         this.activePickups(),
         this.mission.canExtract(),
         this.alert.state,
-        this.debug.enabled
+        this.debug.enabled,
+        this.minimapZoomMode
       )
     );
   }
@@ -755,6 +913,7 @@ export class GameScene extends Phaser.Scene {
 
   private cleanupScene(): void {
     this.scene.stop('UIScene');
+    this.grenadeAimGraphics?.destroy();
     this.debug?.destroy();
     this.lighting?.destroy();
     this.collisions?.destroy();

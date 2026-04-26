@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS, DEPTHS } from '../game/constants';
-import type { HudState, MinimapSnapshot } from '../game/types';
+import type { HudState, MinimapSnapshot, TacticalLogEntry } from '../game/types';
 import { HealthArmorPanel } from './HealthArmorPanel';
 import { WeaponPanel } from './WeaponPanel';
 import { ObjectivePanel } from './ObjectivePanel';
@@ -19,7 +19,7 @@ export class HUD {
   private readonly promptGraphics: Phaser.GameObjects.Graphics;
   private readonly prompt: Phaser.GameObjects.Text;
 
-  private messages: string[] = [];
+  private messages: TacticalLogEntry[] = [];
 
   constructor(private readonly scene: Phaser.Scene) {
     this.health = new HealthArmorPanel(scene);
@@ -71,7 +71,7 @@ export class HUD {
     this.objectives.update(state);
     this.alert.update(state);
 
-    const idlePrompt = 'WASD move  |  Mouse aim  |  LMB fire  |  RMB grenade  |  E interact  |  Tab debug';
+    const idlePrompt = 'WASD move  |  Mouse aim  |  LMB fire  |  RMB grenade  |  E interact  |  M map';
     const promptText = state.interactionPrompt || idlePrompt;
     this.prompt.setText(promptText);
     this.drawPromptFrame(state, promptText);
@@ -79,8 +79,17 @@ export class HUD {
     this.log.update(this.messages);
   }
 
-  pushLog(message: string): void {
-    this.messages.push(message);
+  pushLog(entry: TacticalLogEntry): void {
+    const previous = this.messages.at(-1);
+    if (
+      previous?.message === entry.message &&
+      previous.category === entry.category &&
+      previous.emphasis === entry.emphasis
+    ) {
+      previous.count = entry.count ?? (previous.count ?? 1) + 1;
+    } else {
+      this.messages.push({ ...entry });
+    }
     this.messages = this.messages.slice(-8);
     this.log.update(this.messages);
   }

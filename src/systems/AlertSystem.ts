@@ -6,17 +6,31 @@ export class AlertSystem {
   state: AlertState = 'hidden';
   private detectedTimer = 0;
   private searchingTimer = 0;
+  private lastDetectedAge = Number.POSITIVE_INFINITY;
+
+  get lastSeenSeconds(): number | undefined {
+    return Number.isFinite(this.lastDetectedAge) ? this.lastDetectedAge : undefined;
+  }
 
   update(deltaSeconds: number): void {
+    const wasDetected = this.state === 'detected';
     this.detectedTimer = Math.max(0, this.detectedTimer - deltaSeconds);
     this.searchingTimer = Math.max(0, this.searchingTimer - deltaSeconds);
     const next: AlertState = this.detectedTimer > 0 ? 'detected' : this.searchingTimer > 0 ? 'searching' : 'hidden';
     this.setState(next);
+    if (next === 'detected') {
+      this.lastDetectedAge = 0;
+    } else if (wasDetected) {
+      this.lastDetectedAge = deltaSeconds;
+    } else if (Number.isFinite(this.lastDetectedAge)) {
+      this.lastDetectedAge += deltaSeconds;
+    }
   }
 
   raiseDetected(seconds = 3.2): void {
     this.detectedTimer = Math.max(this.detectedTimer, seconds);
     this.searchingTimer = Math.max(this.searchingTimer, seconds + 3);
+    this.lastDetectedAge = 0;
     this.setState('detected');
   }
 
@@ -40,7 +54,7 @@ export class AlertSystem {
           : missionText.hidden;
     eventBus.emit(GameEvents.AlertChanged, { state: next, detail });
     if (next !== 'hidden') {
-      eventBus.emit(GameEvents.TacticalLog, { message: detail });
+      eventBus.emit(GameEvents.TacticalLog, { message: detail, category: 'alert' });
     }
   }
 }

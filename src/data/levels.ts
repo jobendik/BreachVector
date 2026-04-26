@@ -3,9 +3,9 @@ import type { LevelData } from '../game/types';
 export const levels: LevelData[] = [
   {
     id: 'blacksite-approach',
-    name: 'Infiltrate Facility',
+    name: 'Security Wing Breach',
     briefing:
-      'Enter the west service sector, compromise both security terminals, neutralize the command unit, and extract through the north-east pad.',
+      'Breach the west service lane, override the entry terminal, slip past the first patrol, compromise the inner security terminal, neutralize the command unit, and extract through the north-east pad.',
     width: 2100,
     height: 1400,
     spawn: { x: 170, y: 920 },
@@ -44,12 +44,12 @@ export const levels: LevelData[] = [
       { id: 'b', x: 1340, y: 870, w: 40, h: 140, locked: true }
     ],
     terminals: [
-      { id: 'a', x: 410, y: 420, prompt: 'Hack west terminal', hackTime: 1.4 },
+      { id: 'a', x: 165, y: 760, prompt: 'Hack entry terminal', hackTime: 1.2 },
       { id: 'b', x: 1510, y: 930, prompt: 'Hack east terminal', hackTime: 1.7 }
     ],
     props: [
-      { kind: 'barrel', x: 430, y: 500 },
-      { kind: 'barrel', x: 470, y: 500 },
+      { kind: 'barrel', x: 700, y: 890 },
+      { kind: 'barrel', x: 742, y: 890 },
       { kind: 'crate', x: 720, y: 720, w: 70, h: 44 },
       { kind: 'crate', x: 1020, y: 440, w: 65, h: 45 },
       { kind: 'barrel', x: 1490, y: 470 },
@@ -64,13 +64,13 @@ export const levels: LevelData[] = [
     enemies: [
       {
         role: 'assault',
-        x: 460,
-        y: 330,
+        x: 430,
+        y: 1140,
         patrol: [
-          { x: 420, y: 330 },
-          { x: 740, y: 330 }
+          { x: 350, y: 1140 },
+          { x: 535, y: 1140 }
         ],
-        angle: 0
+        angle: Math.PI
       },
       {
         role: 'flanker',

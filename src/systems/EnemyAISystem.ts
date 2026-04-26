@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { Enemy } from '../entities/Enemy';
 import type { Player } from '../entities/Player';
-import { EnemyState } from '../game/types';
+import { EnemyState, type TacticalLogCategory, type TacticalLogEmphasis } from '../game/types';
 import type { AlertSystem } from './AlertSystem';
 import type { PathfindingSystem } from './PathfindingSystem';
 import type { VisionSystem } from './VisionSystem';
@@ -16,6 +16,10 @@ const SUSPICION_INVESTIGATE_THRESHOLD = 0.3;
 const SUSPICION_DETECTED_THRESHOLD = 1;
 const SUSPICION_FILL_RATE = 0.92;
 const SUSPICION_DRAIN_RATE = 0.34;
+const CAPTAIN_COMMAND_RANGE = 520;
+const CAPTAIN_COMMAND_INTERVAL = 6.5;
+const CAPTAIN_COMMAND_DURATION = 4.8;
+const CAPTAIN_COMMAND_ARMOR = 8;
 
 interface EnemyAIWorld {
   player: Player;
@@ -25,6 +29,7 @@ interface EnemyAIWorld {
   alert: AlertSystem;
   weapons: WeaponSystem;
   pathfinding: PathfindingSystem;
+  log(message: string, category?: TacticalLogCategory, emphasis?: TacticalLogEmphasis): void;
 }
 
 export class EnemyAISystem {
@@ -48,6 +53,7 @@ export class EnemyAISystem {
         this.world.vision.isVisibleFromPlayer(enemy.positionVector);
 
       this.updateSuspicion(enemy, seesPlayer, deltaSeconds);
+      this.updateCaptainCommand(enemy);
       if (
         !seesPlayer &&
         (enemy.aiState === EnemyState.Attack || enemy.aiState === EnemyState.Flank) &&
@@ -58,6 +64,45 @@ export class EnemyAISystem {
 
       this.updateState(enemy, deltaSeconds);
     }
+  }
+
+  private updateCaptainCommand(enemy: Enemy): void {
+    if (enemy.role !== 'captain' || enemy.commandCooldown > 0 || this.world.alert.state === 'hidden') {
+      return;
+    }
+
+    enemy.commandCooldown = CAPTAIN_COMMAND_INTERVAL + Math.random() * 1.4;
+    enemy.commandPulseTimer = 1.05;
+    enemy.commandBoostTimer = CAPTAIN_COMMAND_DURATION;
+    enemy.armor = Math.min(enemy.maxArmor, enemy.armor + CAPTAIN_COMMAND_ARMOR);
+
+    let boosted = 0;
+    for (const ally of this.world.enemiesList) {
+      if (ally.dead || ally === enemy) {
+        continue;
+      }
+      const distance = Phaser.Math.Distance.Between(enemy.x, enemy.y, ally.x, ally.y);
+      if (distance > CAPTAIN_COMMAND_RANGE) {
+        continue;
+      }
+      boosted += 1;
+      ally.commandBoostTimer = CAPTAIN_COMMAND_DURATION;
+      ally.armor = Math.min(ally.maxArmor, ally.armor + CAPTAIN_COMMAND_ARMOR);
+      ally.suspicion = Math.max(ally.suspicion, this.world.alert.state === 'detected' ? 0.75 : 0.44);
+      ally.lastKnownPlayer = this.world.player.positionVector;
+      if (
+        ally.aiState !== EnemyState.Attack &&
+        ally.aiState !== EnemyState.Flank &&
+        ally.aiState !== EnemyState.Cover &&
+        ally.aiState !== EnemyState.Reload
+      ) {
+        ally.investigatePoint = this.world.player.positionVector;
+        ally.setAIState(this.world.alert.state === 'detected' ? EnemyState.Search : EnemyState.Suspicious);
+      }
+    }
+
+    this.world.alert.raiseSearch(4.2);
+    this.world.log(boosted > 0 ? `Command pulse boosted ${boosted} hostiles` : 'Command pulse active', 'alert');
   }
 
   private updateSuspicion(enemy: Enemy, seesPlayer: boolean, deltaSeconds: number): void {
@@ -324,7 +369,10 @@ export class EnemyAISystem {
       enemy.navPath.shift();
     }
 
-    enemy.moveToward(enemy.navPath.length > 0 ? enemy.navPath[0] : target, speedMultiplier);
+    enemy.moveToward(
+      enemy.navPath.length > 0 ? enemy.navPath[0] : target,
+      enemy.commandBoostTimer > 0 ? speedMultiplier * 1.12 : speedMultiplier
+    );
   }
 
   private findCover(enemy: Enemy): Phaser.Math.Vector2 | undefined {

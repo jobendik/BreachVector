@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { levels } from '../data/levels';
 import { COLORS } from '../game/constants';
+import { saveSectorReport, type ProgressUpdate } from '../game/progress';
 import type { SectorReport } from '../game/types';
 import { cssColor } from '../utils/colors';
 
@@ -47,7 +48,8 @@ export class VictoryScene extends Phaser.Scene {
       )
       .setOrigin(0.5);
 
-    this.drawReport(data.report);
+    const progressUpdate = data.report ? saveSectorReport(data.report) : undefined;
+    this.drawReport(data.report, progressUpdate);
     if (!complete) {
       this.button(width / 2 - 150, height - 96, 'NEXT SECTOR', () =>
         this.scene.start('GameScene', { levelIndex: nextLevel })
@@ -60,7 +62,7 @@ export class VictoryScene extends Phaser.Scene {
     this.drawUplink(time / 1000);
   }
 
-  private drawReport(report?: SectorReport): void {
+  private drawReport(report?: SectorReport, progressUpdate?: ProgressUpdate): void {
     const { width, height } = this.scale;
     const x = width / 2 - 342;
     const y = height * 0.31;
@@ -110,6 +112,22 @@ export class VictoryScene extends Phaser.Scene {
       lineSpacing: 8,
       wordWrap: { width: 250 }
     });
+
+    if (progressUpdate) {
+      const bestLines = [
+        progressUpdate.firstClear ? 'FIRST CLEAR RECORDED' : 'BESTS UPDATED',
+        `Best grade: ${progressUpdate.sector.bestGrade}${progressUpdate.newBestGrade ? '  NEW' : ''}`,
+        `Best time: ${this.formatTime(progressUpdate.sector.bestTimeSeconds)}${
+          progressUpdate.newBestTime ? '  NEW' : ''
+        }`,
+        `Best stealth: ${progressUpdate.sector.bestStealthRating}${progressUpdate.newBestStealth ? '  NEW' : ''}`,
+        `Completions: ${progressUpdate.sector.completions}`
+      ];
+      this.add.text(x + 32, y + 218, bestLines.join('  /  '), {
+        ...this.textStyle(11, cssColor(COLORS.operatorGreenSoft), '700'),
+        wordWrap: { width: panelWidth - 64 }
+      });
+    }
   }
 
   private drawUplink(timeSeconds: number): void {

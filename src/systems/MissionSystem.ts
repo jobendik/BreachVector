@@ -2,7 +2,7 @@ import { missionText } from '../data/missionText';
 import type { ExtractionZone } from '../entities/ExtractionZone';
 import type { Player } from '../entities/Player';
 import { GameEvents, eventBus } from '../game/events';
-import type { LevelData, MissionObjective } from '../game/types';
+import type { LevelData, MissionObjective, TacticalLogCategory, TacticalLogEmphasis } from '../game/types';
 import { pointInRect } from '../utils/geometry';
 
 interface MissionWorld {
@@ -12,7 +12,7 @@ interface MissionWorld {
   audio: {
     play(id: 'complete'): void;
   };
-  log(message: string): void;
+  log(message: string, category?: TacticalLogCategory, emphasis?: TacticalLogEmphasis): void;
   onSectorComplete(): void;
 }
 
@@ -35,9 +35,13 @@ export class MissionSystem {
       return;
     }
     this.terminalFlags.set(id, true);
-    eventBus.emit(GameEvents.TacticalLog, { message: missionText.terminalComplete(id) });
+    eventBus.emit(GameEvents.TacticalLog, { message: missionText.terminalComplete(id), category: 'objective' });
     if (this.terminalsComplete() && !this.level.requiresCaptainKill) {
-      eventBus.emit(GameEvents.TacticalLog, { message: missionText.extractionReady });
+      eventBus.emit(GameEvents.TacticalLog, {
+        message: missionText.extractionReady,
+        category: 'objective',
+        emphasis: 'critical'
+      });
     }
     this.emit();
   }
@@ -47,9 +51,17 @@ export class MissionSystem {
       return;
     }
     this.captainKilled = true;
-    eventBus.emit(GameEvents.TacticalLog, { message: missionText.captainDown });
+    eventBus.emit(GameEvents.TacticalLog, {
+      message: missionText.captainDown,
+      category: 'combat',
+      emphasis: 'critical'
+    });
     if (this.canExtract()) {
-      eventBus.emit(GameEvents.TacticalLog, { message: missionText.extractionReady });
+      eventBus.emit(GameEvents.TacticalLog, {
+        message: missionText.extractionReady,
+        category: 'objective',
+        emphasis: 'critical'
+      });
     }
     this.emit();
   }
@@ -72,7 +84,7 @@ export class MissionSystem {
 
     this.extractionComplete = true;
     this.world.audio.play('complete');
-    this.world.log(missionText.sectorClear);
+    this.world.log(missionText.sectorClear, 'objective', 'critical');
     this.world.onSectorComplete();
   }
 

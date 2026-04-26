@@ -1,15 +1,28 @@
 import Phaser from 'phaser';
-import type { WeaponDefinition } from '../game/types';
+import type { WeaponDefinition, WeaponId } from '../game/types';
+import { WORLD_BALANCE } from '../game/constants';
 import { Grenade } from '../entities/Grenade';
 import { Projectile } from '../entities/Projectile';
 import type { Enemy } from '../entities/Enemy';
 import { EnemyState } from '../game/types';
 import type { Player } from '../entities/Player';
+import type { MuzzleFlashOptions } from '../effects/MuzzleFlash';
+import type { TracerOptions } from './EffectsSystem';
+
+const GRENADE_MIN_RANGE = 150;
+const GRENADE_MAX_RANGE = 560;
+const GRENADE_SPEED_BONUS = 36;
 
 interface WeaponWorld {
   effects: {
-    muzzleFlash(x: number, y: number, angle: number, color: number): void;
-    tracer(from: Phaser.Math.Vector2, to: Phaser.Math.Vector2, color: number, width: number): void;
+    muzzleFlash(x: number, y: number, angle: number, color: number, options?: MuzzleFlashOptions): void;
+    tracer(
+      from: Phaser.Math.Vector2,
+      to: Phaser.Math.Vector2,
+      color: number,
+      width: number,
+      options?: TracerOptions
+    ): void;
     shake(intensity: number): void;
   };
   audio: {
@@ -73,12 +86,23 @@ export class WeaponSystem {
       return false;
     }
     player.grenades -= 1;
-    const angle = Phaser.Math.Angle.Between(player.x, player.y, target.x, target.y);
+    const preview = this.grenadePreview(player, target);
+    const angle = Phaser.Math.Angle.Between(player.x, player.y, preview.target.x, preview.target.y);
     const spawn = player.positionVector.add(player.facing.clone().scale(22));
-    const grenade = new Grenade(this.world.scene, spawn.x, spawn.y, angle, 'player');
+    const grenade = new Grenade(this.world.scene, spawn.x, spawn.y, angle, 'player', preview.speed);
     this.world.spawnGrenade(grenade);
     this.world.emitNoise(player.positionVector, 300, true);
     return true;
+  }
+
+  grenadePreview(player: Player, target: Phaser.Math.Vector2): { target: Phaser.Math.Vector2; speed: number } {
+    const offset = target.clone().subtract(player.positionVector);
+    const distance = Phaser.Math.Clamp(offset.length(), GRENADE_MIN_RANGE, GRENADE_MAX_RANGE);
+    const direction = offset.lengthSq() > 0.001 ? offset.normalize() : player.facing.clone();
+    return {
+      target: player.positionVector.add(direction.scale(distance)),
+      speed: distance / WORLD_BALANCE.grenadeFuse + GRENADE_SPEED_BONUS
+    };
   }
 
   tryFireEnemy(enemy: Enemy, target: Phaser.Math.Vector2): boolean {
@@ -92,13 +116,16 @@ export class WeaponSystem {
       return false;
     }
 
-    enemy.fireCooldown = 1 / enemy.config.fireRate;
+    enemy.fireCooldown = (1 / enemy.config.fireRate) * (enemy.commandBoostTimer > 0 ? 0.72 : 1);
     enemy.shotsUntilReload -= 1;
     const muzzle = enemy.positionVector.add(enemy.facing.clone().scale(enemy.collisionRadius + 8));
     for (let i = 0; i < enemy.config.burstCount; i += 1) {
       const angle =
         Phaser.Math.Angle.Between(muzzle.x, muzzle.y, target.x, target.y) +
-        Phaser.Math.FloatBetween(-enemy.config.accuracy, enemy.config.accuracy);
+        Phaser.Math.FloatBetween(
+          -enemy.config.accuracy * (enemy.commandBoostTimer > 0 ? 0.72 : 1),
+          enemy.config.accuracy * (enemy.commandBoostTimer > 0 ? 0.72 : 1)
+        );
       const projectile = new Projectile(this.world.scene, {
         ownerId: enemy.actorId,
         team: 'enemy',
@@ -115,9 +142,18 @@ export class WeaponSystem {
       });
       this.world.spawnProjectile(projectile);
       const trailEnd = muzzle.clone().add(new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(90));
-      this.world.effects.tracer(muzzle, trailEnd, enemy.config.color, 2);
+      this.world.effects.tracer(muzzle, trailEnd, enemy.config.color, 2, {
+        duration: 95,
+        glowWidth: enemy.commandBoostTimer > 0 ? 6 : 4,
+        glowAlpha: enemy.commandBoostTimer > 0 ? 0.2 : 0.12
+      });
     }
-    this.world.effects.muzzleFlash(muzzle.x, muzzle.y, enemy.facing.angle(), enemy.config.color);
+    this.world.effects.muzzleFlash(muzzle.x, muzzle.y, enemy.facing.angle(), enemy.config.color, {
+      length: enemy.commandBoostTimer > 0 ? 48 : 38,
+      width: enemy.commandBoostTimer > 0 ? 8 : 6,
+      coreRadius: 4,
+      duration: 85
+    });
     this.world.emitNoise(enemy.positionVector, enemy.config.noiseRadius, true);
     this.world.audio.play('enemy');
     return true;
@@ -153,10 +189,13 @@ export class WeaponSystem {
         sourceLabel: definition.displayName
       });
       this.world.spawnProjectile(projectile);
-      const trailEnd = muzzle.clone().add(new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(125));
-      this.world.effects.tracer(muzzle, trailEnd, definition.color, definition.tracerWidth);
+      const trail = this.tracerProfile(definition.id);
+      const trailEnd = muzzle
+        .clone()
+        .add(new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(trail.length));
+      this.world.effects.tracer(muzzle, trailEnd, definition.color, trail.width, trail.options);
     }
-    this.world.effects.muzzleFlash(muzzle.x, muzzle.y, baseAngle, definition.color);
+    this.world.effects.muzzleFlash(muzzle.x, muzzle.y, baseAngle, definition.color, this.muzzleProfile(definition.id));
   }
 
   private applyRecoil(player: Player, target: Phaser.Math.Vector2, recoil: number): void {
@@ -171,5 +210,47 @@ export class WeaponSystem {
     if (definition.id === 'scattergun') return 'shotgun';
     if (definition.id === 'rail-piercer') return 'rail';
     return 'rifle';
+  }
+
+  private tracerProfile(id: WeaponId): { length: number; width: number; options: TracerOptions } {
+    if (id === 'silenced-pistol') {
+      return {
+        length: 92,
+        width: 1.5,
+        options: { alpha: 0.62, duration: 80, glowWidth: 3, glowAlpha: 0.08 }
+      };
+    }
+    if (id === 'pulse-rifle') {
+      return {
+        length: 136,
+        width: 2.4,
+        options: { alpha: 0.88, duration: 105, glowWidth: 7, glowAlpha: 0.18, sparkColor: 0x38bdf8 }
+      };
+    }
+    if (id === 'scattergun') {
+      return {
+        length: 88,
+        width: 2.8,
+        options: { alpha: 0.72, duration: 120, glowWidth: 5, glowAlpha: 0.1, sparkColor: 0xfbbf24 }
+      };
+    }
+    return {
+      length: 230,
+      width: 6,
+      options: { alpha: 0.96, duration: 170, glowWidth: 15, glowAlpha: 0.24, afterimage: true, sparkColor: 0xc084fc }
+    };
+  }
+
+  private muzzleProfile(id: WeaponId): MuzzleFlashOptions {
+    if (id === 'silenced-pistol') {
+      return { length: 26, width: 4, coreRadius: 3, duration: 65, stretch: 1.18, fadeScaleY: 0.42 };
+    }
+    if (id === 'pulse-rifle') {
+      return { length: 44, width: 7, coreRadius: 5, duration: 85, stretch: 1.35, fadeScaleY: 0.34 };
+    }
+    if (id === 'scattergun') {
+      return { length: 56, width: 13, coreRadius: 7, duration: 120, stretch: 1.25, fadeScaleY: 0.5 };
+    }
+    return { length: 76, width: 10, coreRadius: 8, duration: 150, stretch: 1.55, fadeScaleY: 0.28 };
   }
 }

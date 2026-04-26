@@ -1,12 +1,15 @@
 import Phaser from 'phaser';
 import { Door } from '../entities/Door';
 import { Enemy } from '../entities/Enemy';
+import { Grenade } from '../entities/Grenade';
 import { Pickup } from '../entities/Pickup';
 import { Player } from '../entities/Player';
 import { Projectile } from '../entities/Projectile';
 import { Prop } from '../entities/Prop';
-import type { RectData } from '../game/types';
+import { PLAYER_BALANCE } from '../game/constants';
+import type { PickupType, RectData, TacticalLogCategory, TacticalLogEmphasis } from '../game/types';
 import { distanceToSegment, pointInRect, rayRect } from '../utils/geometry';
+import type { SoundId } from './AudioSystem';
 import type { CombatSystem } from './CombatSystem';
 
 type ArcadeObject =
@@ -30,12 +33,13 @@ interface CollisionWorld {
   grenades: Phaser.Physics.Arcade.Group;
   pickups: Phaser.Physics.Arcade.Group;
   combat: CombatSystem;
-  log(message: string): void;
+  log(message: string, category?: TacticalLogCategory, emphasis?: TacticalLogEmphasis): void;
   effects: {
     hit(x: number, y: number, color?: number): void;
+    floatingText(x: number, y: number, value: string, color: number): void;
   };
   audio: {
-    play(id: 'pickup'): void;
+    play(id: SoundId): void;
   };
 }
 
@@ -50,6 +54,8 @@ type ProjectileSweepHit =
   | (SweepBase & { kind: 'prop'; prop: Prop })
   | (SweepBase & { kind: 'enemy'; enemy: Enemy })
   | (SweepBase & { kind: 'player'; player: Player });
+
+const PICKUP_PRIORITY_RADIUS = 56;
 
 export class CollisionSystem {
   private readonly colliders: Phaser.Physics.Arcade.Collider[] = [];
@@ -66,9 +72,9 @@ export class CollisionSystem {
       physics.add.collider(this.world.enemies, this.world.doors, undefined, this.closedDoorProcess, this),
       physics.add.collider(this.world.enemies, this.world.propsGroup),
       physics.add.collider(this.world.enemies, this.world.enemies),
-      physics.add.collider(this.world.grenades, this.world.walls),
-      physics.add.collider(this.world.grenades, this.world.doors, undefined, this.closedDoorProcess, this),
-      physics.add.collider(this.world.grenades, this.world.propsGroup),
+      physics.add.collider(this.world.grenades, this.world.walls, this.grenadeSurfaceHit, undefined, this),
+      physics.add.collider(this.world.grenades, this.world.doors, this.grenadeSurfaceHit, this.closedDoorProcess, this),
+      physics.add.collider(this.world.grenades, this.world.propsGroup, this.grenadeSurfaceHit, undefined, this),
       physics.add.collider(this.world.projectiles, this.world.walls, this.projectileWallHit, undefined, this),
       physics.add.collider(
         this.world.projectiles,
@@ -131,6 +137,17 @@ export class CollisionSystem {
     }
     this.world.effects.hit(projectile.x, projectile.y, projectile.color);
     projectile.destroy();
+  }
+
+  private grenadeSurfaceHit(grenadeObject: ArcadeObject): void {
+    if (!(grenadeObject instanceof Grenade)) {
+      return;
+    }
+
+    if (grenadeObject.registerBounce()) {
+      this.world.audio.play('grenadeBounce');
+      this.world.effects.hit(grenadeObject.x, grenadeObject.y, 0xf97316);
+    }
   }
 
   private projectileDoorHit(projectileObject: ArcadeObject, doorObject: ArcadeObject): void {
@@ -201,9 +218,71 @@ export class CollisionSystem {
     if (!pickup.active) {
       return;
     }
+    if (this.prioritizedPickupFor(player) !== pickup) {
+      return;
+    }
+    if (!pickup.canApply(player)) {
+      this.showBlockedPickup(pickup);
+      return;
+    }
     const message = pickup.apply(player);
-    this.world.audio.play('pickup');
-    this.world.log(message);
+    this.world.audio.play(this.pickupSoundFor(pickup.pickupType));
+    this.world.log(message, 'pickup');
+  }
+
+  private prioritizedPickupFor(player: Player): Pickup | undefined {
+    const candidates = this.world.pickups
+      .getChildren()
+      .filter((child): child is Pickup => child instanceof Pickup && child.active)
+      .filter(
+        (pickup) =>
+          Phaser.Math.Distance.Between(player.x, player.y, pickup.x, pickup.y) <=
+          player.collisionRadius + PICKUP_PRIORITY_RADIUS
+      );
+
+    if (candidates.length === 0) {
+      return undefined;
+    }
+
+    const applicable = candidates.filter((pickup) => pickup.canApply(player));
+    const pool = applicable.length > 0 ? applicable : candidates;
+    return pool
+      .map((pickup) => ({
+        pickup,
+        score: this.pickupPriorityScore(player, pickup),
+        distance: Phaser.Math.Distance.Between(player.x, player.y, pickup.x, pickup.y)
+      }))
+      .sort((a, b) => b.score - a.score || a.distance - b.distance)[0]?.pickup;
+  }
+
+  private pickupPriorityScore(player: Player, pickup: Pickup): number {
+    if (!pickup.canApply(player)) {
+      return 0;
+    }
+    if (pickup.pickupType === 'medkit') {
+      return 220 + (player.maxHealth - player.health) + (player.maxArmor - player.armor) * 0.5;
+    }
+    if (pickup.pickupType === 'grenade') {
+      return 150 + (PLAYER_BALANCE.maxGrenades - player.grenades) * 18;
+    }
+    return 100;
+  }
+
+  private showBlockedPickup(pickup: Pickup): void {
+    if (!pickup.consumeBlockedFeedback(this.world.scene.time.now)) {
+      return;
+    }
+    this.world.effects.floatingText(pickup.x, pickup.y - 28, pickup.blockedMessage(), 0x94a3b8);
+  }
+
+  private pickupSoundFor(type: PickupType): SoundId {
+    if (type === 'medkit') {
+      return 'pickupMedkit';
+    }
+    if (type === 'ammo') {
+      return 'pickupAmmo';
+    }
+    return 'pickupGrenade';
   }
 
   private collectProjectileSweepHits(

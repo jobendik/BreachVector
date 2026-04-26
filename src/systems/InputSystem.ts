@@ -22,6 +22,7 @@ export class InputSystem {
       reload: Phaser.Input.Keyboard.KeyCodes.R,
       interact: Phaser.Input.Keyboard.KeyCodes.E,
       melee: Phaser.Input.Keyboard.KeyCodes.F,
+      minimapZoom: Phaser.Input.Keyboard.KeyCodes.M,
       pause: Phaser.Input.Keyboard.KeyCodes.ESC,
       debug: Phaser.Input.Keyboard.KeyCodes.TAB,
       debugAlt: Phaser.Input.Keyboard.KeyCodes.F1,
@@ -70,6 +71,10 @@ export class InputSystem {
     return this.secondaryPressed;
   }
 
+  secondaryHeld(): boolean {
+    return this.scene.input.activePointer.rightButtonDown();
+  }
+
   slowWalkHeld(): boolean {
     return this.keys.slow.isDown;
   }
@@ -96,6 +101,10 @@ export class InputSystem {
 
   debugPressed(): boolean {
     return Phaser.Input.Keyboard.JustDown(this.keys.debug) || Phaser.Input.Keyboard.JustDown(this.keys.debugAlt);
+  }
+
+  minimapZoomPressed(): boolean {
+    return Phaser.Input.Keyboard.JustDown(this.keys.minimapZoom);
   }
 
   weaponPressed(): number | null {

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { AlertState, HudState, MinimapSnapshot, MissionObjective } from './types';
+import type { AlertState, HudState, MinimapSnapshot, MissionObjective, TacticalLogEntry } from './types';
 
 export const GameEvents = {
   HudState: 'hud-state',
@@ -14,7 +14,7 @@ export interface GameEventMap {
   [GameEvents.HudState]: HudState;
   [GameEvents.MissionUpdated]: MissionObjective[];
   [GameEvents.AlertChanged]: { state: AlertState; detail: string };
-  [GameEvents.TacticalLog]: { message: string };
+  [GameEvents.TacticalLog]: TacticalLogEntry;
   [GameEvents.MinimapSnapshot]: MinimapSnapshot;
   [GameEvents.DebugChanged]: { enabled: boolean };
 }

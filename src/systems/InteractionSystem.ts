@@ -3,7 +3,7 @@ import type { Door } from '../entities/Door';
 import type { Player } from '../entities/Player';
 import type { Terminal } from '../entities/Terminal';
 import { PLAYER_BALANCE } from '../game/constants';
-import type { LevelData } from '../game/types';
+import type { LevelData, TacticalLogCategory, TacticalLogEmphasis } from '../game/types';
 import { pointInRect, rectCenter } from '../utils/geometry';
 
 export interface InteractionStatus {
@@ -31,7 +31,7 @@ interface InteractionWorld {
     explosion(x: number, y: number, color?: number, scale?: number): void;
   };
   emitNoise(point: Phaser.Math.Vector2, radius: number, important?: boolean): void;
-  log(message: string): void;
+  log(message: string, category?: TacticalLogCategory, emphasis?: TacticalLogEmphasis): void;
   onDoorOpened?(): void;
 }
 
@@ -116,7 +116,7 @@ export class InteractionSystem {
     door.openDoor();
     this.world.audio.play('interact');
     this.world.onDoorOpened?.();
-    this.world.log(`Door ${door.doorId.toUpperCase()} opened`);
+    this.world.log(`Door ${door.doorId.toUpperCase()} opened`, 'objective');
   }
 
   private nearestTerminal(): Terminal | undefined {

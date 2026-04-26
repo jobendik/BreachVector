@@ -6,6 +6,7 @@ import type { Player } from './Player';
 
 export class Pickup extends Phaser.Physics.Arcade.Sprite {
   readonly pickupType: PickupType;
+  private blockedFeedbackReadyAt = 0;
 
   constructor(scene: Phaser.Scene, data: PickupData) {
     const definition = pickupDefinitions[data.type];
@@ -18,6 +19,34 @@ export class Pickup extends Phaser.Physics.Arcade.Sprite {
     body.setCircle(13);
     this.setTint(definition.color);
     this.setDepth(DEPTHS.pickups);
+  }
+
+  canApply(player: Player): boolean {
+    if (this.pickupType === 'medkit') {
+      return player.health < player.maxHealth || player.armor < player.maxArmor;
+    }
+    if (this.pickupType === 'grenade') {
+      return player.grenades < PLAYER_BALANCE.maxGrenades;
+    }
+    return true;
+  }
+
+  blockedMessage(): string {
+    if (this.pickupType === 'medkit') {
+      return 'HP / ARMOR FULL';
+    }
+    if (this.pickupType === 'grenade') {
+      return 'GRENADES FULL';
+    }
+    return 'FULL';
+  }
+
+  consumeBlockedFeedback(nowMs: number): boolean {
+    if (nowMs < this.blockedFeedbackReadyAt) {
+      return false;
+    }
+    this.blockedFeedbackReadyAt = nowMs + 850;
+    return true;
   }
 
   apply(player: Player): string {
