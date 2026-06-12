@@ -63,6 +63,7 @@ export class GameOverScene extends Phaser.Scene {
       ? [
           `Sector: ${report.levelName}`,
           `Killed by: ${cause}`,
+          `Score earned: ${Math.max(0, Math.floor(Number(report.score) || 0)).toLocaleString('en-US')}`,
           `Time survived: ${this.formatTime(report.completionTimeSeconds)}`,
           `Damage taken: ${Math.round(report.damageTaken)}`,
           `Hostiles neutralized: ${report.enemiesKilled}/${report.enemiesTotal}`,

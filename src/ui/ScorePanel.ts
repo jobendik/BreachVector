@@ -9,7 +9,6 @@ export class ScorePanel {
   private readonly streakText: Phaser.GameObjects.Text;
   private comboBarTween?: Phaser.Tweens.Tween;
   private streakTween?: Phaser.Tweens.TweenChain;
-  private scorePunchTween?: Phaser.Tweens.Tween;
   private comboRatio = { value: 0 };
   private centerX = 0;
   private topY = 20;
@@ -63,9 +62,9 @@ export class ScorePanel {
     this.displayedScore = payload.score;
     this.scoreText.setText(`SCORE ${payload.score.toLocaleString('en-US')}`);
     if (payload.delta > 0) {
-      this.scorePunchTween?.remove();
+      this.scene.tweens.killTweensOf(this.scoreText);
       this.scoreText.setScale(1.18);
-      this.scorePunchTween = this.scene.tweens.add({
+      this.scene.tweens.add({
         targets: this.scoreText,
         scale: 1,
         duration: 180,
@@ -79,7 +78,8 @@ export class ScorePanel {
       this.comboText.setText(`COMBO x${payload.multiplier.toFixed(1).replace(/\.0$/, '')}`);
     }
 
-    this.comboBarTween?.remove();
+    this.comboBarTween?.stop();
+    this.comboBarTween = undefined;
     if (payload.chain >= 1 && payload.comboRemainingSeconds > 0) {
       this.comboRatio.value = payload.comboRemainingSeconds / payload.comboWindowSeconds;
       this.comboBarTween = this.scene.tweens.add({
@@ -100,7 +100,8 @@ export class ScorePanel {
   }
 
   announceStreak(label: string, chain: number): void {
-    this.streakTween?.remove();
+    this.streakTween?.stop();
+    this.streakTween = undefined;
     this.streakText.setText(label).setVisible(true).setAlpha(1).setScale(0.4);
     this.streakText.setColor(cssColor(chain >= 4 ? COLORS.alertRed : COLORS.hazardAmberBright));
     this.streakTween = this.scene.tweens.chain({
@@ -115,9 +116,9 @@ export class ScorePanel {
   }
 
   destroy(): void {
-    this.comboBarTween?.remove();
-    this.streakTween?.remove();
-    this.scorePunchTween?.remove();
+    this.comboBarTween?.stop();
+    this.streakTween?.stop();
+    this.scene.tweens.killTweensOf(this.scoreText);
     this.scoreText.destroy();
     this.comboText.destroy();
     this.comboBar.destroy();

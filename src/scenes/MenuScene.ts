@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { levels } from '../data/levels';
 import { COLORS, GAME_TITLE, GAME_VERSION } from '../game/constants';
-import { completedSectorCount, loadProgress, nextIncompleteLevelIndex } from '../game/progress';
+import { completedSectorCount, loadProgress, nextIncompleteLevelIndex, totalBestScore } from '../game/progress';
+import { recordVisit, type RetentionVisit } from '../game/retention';
 import { cssColor } from '../utils/colors';
 
 type MenuPanel = 'briefing' | 'controls' | 'settings' | 'credits';
@@ -22,6 +23,8 @@ export class MenuScene extends Phaser.Scene {
   private panelTitle!: Phaser.GameObjects.Text;
   private panelBody!: Phaser.GameObjects.Text;
   private footer!: Phaser.GameObjects.Text;
+  private streakBanner!: Phaser.GameObjects.Text;
+  private retention!: RetentionVisit;
   private activePanel: MenuPanel = 'briefing';
   private selectedMode: OperationMode = 'DEMO';
   private buttons: MenuButton[] = [];
@@ -34,6 +37,7 @@ export class MenuScene extends Phaser.Scene {
 
   create(): void {
     this.progress = loadProgress();
+    this.retention = recordVisit();
     this.buttons = [];
     this.modeButtons = [];
     this.cameras.main.setBackgroundColor(COLORS.blacksiteNavy);
@@ -74,14 +78,17 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(3);
     this.subtitle = this.add
-      .text(
-        0,
-        0,
-        'TACTICAL BREACH PROTOTYPE / GENERATED BLACKSITE BUILD',
-        this.textStyle(14, cssColor(COLORS.systemCyanSoft), '700')
-      )
+      .text(0, 0, 'TOP-DOWN TACTICAL STEALTH SHOOTER', this.textStyle(14, cssColor(COLORS.systemCyanSoft), '700'))
       .setOrigin(0.5)
       .setDepth(3);
+    this.streakBanner = this.add
+      .text(0, 0, this.streakBannerText(), this.textStyle(13, cssColor(COLORS.hazardAmberBright), '900'))
+      .setOrigin(0.5)
+      .setDepth(3);
+    if (this.retention.isNewDay) {
+      this.streakBanner.setScale(0.4);
+      this.tweens.add({ targets: this.streakBanner, scale: 1, duration: 320, ease: 'Back.easeOut', delay: 250 });
+    }
     this.footer = this.add
       .text(0, 0, '', this.textStyle(11, cssColor(COLORS.steelLight), '700'))
       .setOrigin(0.5)
@@ -129,6 +136,7 @@ export class MenuScene extends Phaser.Scene {
     this.title.setPosition(width / 2, height * 0.14);
     this.titleGhost.setPosition(width / 2 + 2, height * 0.14);
     this.subtitle.setPosition(width / 2, height * 0.225);
+    this.streakBanner.setPosition(width / 2, height * 0.265);
     this.footer
       .setText(`v${GAME_VERSION}  /  PHASER 3 + TYPESCRIPT  /  MODE: ${this.selectedMode}`)
       .setPosition(width / 2, height - 24);
@@ -204,10 +212,7 @@ export class MenuScene extends Phaser.Scene {
     }
     return {
       title: 'OPERATOR BRIEFING',
-      body:
-        `${levels[0].briefing}\n\n` +
-        'Mission loop: infiltrate, hack terminal systems, open locked routes, neutralize command, and extract before the blacksite fully mobilizes.' +
-        this.progressSummary()
+      body: `${levels[0].briefing}${this.progressSummary()}`
     };
   }
 
@@ -320,13 +325,20 @@ export class MenuScene extends Phaser.Scene {
     return completedSectorCount(this.progress) > 0 ? 'CONTINUE OPERATION' : 'START OPERATION';
   }
 
+  private streakBannerText(): string {
+    const streak = Math.max(1, this.retention.state.streakDays);
+    const best = totalBestScore(this.progress);
+    const scorePart = best > 0 ? `   /   HIGH SCORE ${best.toLocaleString('en-US')}` : '';
+    return `DAY ${streak} OPERATIVE STREAK${scorePart}`;
+  }
+
   private progressSummary(): string {
     const completed = completedSectorCount(this.progress);
     if (completed === 0) {
       return '';
     }
     const next = levels[nextIncompleteLevelIndex(this.progress)];
-    return `\n\nProgress: ${completed}/${levels.length} sectors cleared. Next operation: ${next.name}.`;
+    return `\n\nProgress: ${completed}/${levels.length} sectors  /  High score: ${totalBestScore(this.progress).toLocaleString('en-US')}  /  Next: ${next.name}`;
   }
 
   private textStyle(size: number, color: string, weight: string): Phaser.Types.GameObjects.Text.TextStyle {

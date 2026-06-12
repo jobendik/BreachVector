@@ -8,8 +8,7 @@ export class UIScene extends Phaser.Scene {
   private readonly onHud = (state: HudState) => this.hud?.updateState(state);
   private readonly onLog = (entry: TacticalLogEntry) => this.hud?.pushLog(entry);
   private readonly onMinimap = (snapshot: MinimapSnapshot) => this.hud?.updateMinimap(snapshot);
-  private readonly onScore = (payload: GameEventMap[typeof GameEvents.ScoreChanged]) =>
-    this.hud?.updateScore(payload);
+  private readonly onScore = (payload: GameEventMap[typeof GameEvents.ScoreChanged]) => this.hud?.updateScore(payload);
   private readonly onStreak = (payload: GameEventMap[typeof GameEvents.KillStreak]) =>
     this.hud?.announceStreak(payload.label, payload.chain);
 

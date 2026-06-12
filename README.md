@@ -30,8 +30,11 @@ Infiltrate hostile blacksites, move between stealth and emergency combat, hack t
 - Grenade preview with clamped range, fuse indicator, bounce feedback, danger marker, and line-of-sight explosion damage.
 - Destructible crates and explosive barrels.
 - HUD with segmented health, armor, dash, ammo, reload, grenades, objectives, alert state, tactical log, minimap, interaction prompt, captain status, and awareness counts.
+- Arcade scoring: role-based kill points, chained combo multipliers up to x5, ghost (undetected) kill bonuses, kill-streak callouts, and terminal hack rewards.
+- End-of-sector score breakdown with stealth, accuracy, speed, and untouchable bonuses, plus animated score count-up and new-high-score celebration.
+- Daily operative streak tracking with a menu banner and a return-tomorrow hook on the victory screen.
 - Minimap sector/local zoom toggle.
-- Sector clear report with grade, stealth rating, kill breakdown, accuracy, damage taken, tactical advice, and best-progress persistence.
+- Sector clear report with grade, stealth rating, kill breakdown, accuracy, damage taken, tactical advice, and best-progress persistence including per-sector high scores.
 - Persistent local settings for graphics quality, master/music/SFX/UI volume, screen shake, flash intensity, colorblind mode, and reduced motion.
 
 ## Architecture Highlights

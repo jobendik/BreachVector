@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { levels } from '../data/levels';
 import { COLORS } from '../game/constants';
 import { saveSectorReport, type ProgressUpdate } from '../game/progress';
+import { loadRetention } from '../game/retention';
 import type { SectorReport } from '../game/types';
 import { cssColor } from '../utils/colors';
 
@@ -49,7 +50,9 @@ export class VictoryScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const progressUpdate = data.report ? saveSectorReport(data.report) : undefined;
+    this.drawScoreBanner(data.report, progressUpdate);
     this.drawReport(data.report, progressUpdate);
+    this.drawReturnHook();
     if (!complete) {
       this.button(width / 2 - 150, height - 96, 'NEXT SECTOR', () =>
         this.scene.start('GameScene', { levelIndex: nextLevel })
@@ -62,10 +65,83 @@ export class VictoryScene extends Phaser.Scene {
     this.drawUplink(time / 1000);
   }
 
+  private drawScoreBanner(report?: SectorReport, progressUpdate?: ProgressUpdate): void {
+    if (!report) {
+      return;
+    }
+    const totalScore = Math.max(0, Math.floor(Number(report.score) || 0));
+    const { width, height } = this.scale;
+    const scoreText = this.add
+      .text(
+        width / 2,
+        height * 0.285,
+        'OPERATION SCORE 0',
+        this.textStyle(26, cssColor(COLORS.hazardAmberBright), '900')
+      )
+      .setOrigin(0.5);
+    const counter = { value: 0 };
+    this.tweens.add({
+      targets: counter,
+      value: totalScore,
+      duration: 1100,
+      ease: 'Cubic.easeOut',
+      onUpdate: () => scoreText.setText(`OPERATION SCORE ${Math.round(counter.value).toLocaleString('en-US')}`),
+      onComplete: () => {
+        scoreText.setText(`OPERATION SCORE ${totalScore.toLocaleString('en-US')}`);
+        if (progressUpdate?.newBestScore) {
+          const badge = this.add
+            .text(
+              width / 2,
+              height * 0.285 + 48,
+              'NEW HIGH SCORE',
+              this.textStyle(15, cssColor(COLORS.energyVioletBright), '900')
+            )
+            .setOrigin(0.5)
+            .setScale(0.4);
+          this.tweens.add({ targets: badge, scale: 1, duration: 220, ease: 'Back.easeOut' });
+          this.tweens.add({ targets: badge, alpha: 0.45, duration: 520, yoyo: true, repeat: -1 });
+        }
+      }
+    });
+
+    const b = report.scoreBreakdown;
+    const parts = b
+      ? [
+          `COMBAT ${b.combatScore.toLocaleString('en-US')}`,
+          b.stealthBonus > 0 ? `STEALTH +${b.stealthBonus}` : '',
+          b.accuracyBonus > 0 ? `ACCURACY +${b.accuracyBonus}` : '',
+          b.timeBonus > 0 ? `SPEED +${b.timeBonus}` : '',
+          b.untouchableBonus > 0 ? `UNTOUCHABLE +${b.untouchableBonus}` : ''
+        ].filter(Boolean)
+      : [];
+    this.add
+      .text(
+        width / 2,
+        height * 0.285 + 26,
+        parts.join('   '),
+        this.textStyle(12, cssColor(COLORS.systemCyanSoft), '700')
+      )
+      .setOrigin(0.5);
+  }
+
+  private drawReturnHook(): void {
+    const { width, height } = this.scale;
+    const retention = loadRetention();
+    const streak = Math.max(1, retention.streakDays);
+    this.add
+      .text(
+        width / 2,
+        height - 26,
+        `OPERATIVE STREAK: DAY ${streak}  /  Return tomorrow to extend your streak`,
+        this.textStyle(12, cssColor(COLORS.operatorGreenSoft), '700')
+      )
+      .setOrigin(0.5);
+  }
+
   private drawReport(report?: SectorReport, progressUpdate?: ProgressUpdate): void {
     const { width, height } = this.scale;
     const x = width / 2 - 342;
-    const y = height * 0.31;
+    const y = height * 0.36;
     const panelWidth = 684;
     const panelHeight = 270;
     const g = this.add.graphics();
@@ -121,11 +197,12 @@ export class VictoryScene extends Phaser.Scene {
           progressUpdate.newBestTime ? '  NEW' : ''
         }`,
         `Best stealth: ${progressUpdate.sector.bestStealthRating}${progressUpdate.newBestStealth ? '  NEW' : ''}`,
+        `Best score: ${progressUpdate.sector.bestScore.toLocaleString('en-US')}${progressUpdate.newBestScore ? '  NEW' : ''}`,
         `Completions: ${progressUpdate.sector.completions}`
       ];
-      this.add.text(x + 32, y + 218, bestLines.join('  /  '), {
+      this.add.text(x + 32, y + panelHeight + 12, bestLines.join('  /  '), {
         ...this.textStyle(11, cssColor(COLORS.operatorGreenSoft), '700'),
-        wordWrap: { width: panelWidth - 64 }
+        wordWrap: { width: 330 }
       });
     }
   }
@@ -177,7 +254,12 @@ export class VictoryScene extends Phaser.Scene {
 
   private nextSectorPreview(levelIndex: number): string {
     const next = levels[levelIndex + 1];
-    return next ? `${next.name}\n${next.briefing}` : 'All available sectors cleared.';
+    if (!next) {
+      return 'All available sectors cleared.';
+    }
+    const firstSentence = next.briefing.split(/(?<=\.)\s/)[0] ?? next.briefing;
+    const teaser = firstSentence.length > 84 ? `${firstSentence.slice(0, 81).trimEnd()}...` : firstSentence;
+    return `${next.name}\n${teaser}`;
   }
 
   private gradeColor(grade: string): number {

@@ -63,7 +63,8 @@ export function saveSectorReport(report: SectorReport): ProgressUpdate {
   const newBestGrade = !previous || GRADE_SCORE[report.grade] > GRADE_SCORE[previous.bestGrade];
   const newBestTime = !previous || report.completionTimeSeconds < previous.bestTimeSeconds;
   const newBestStealth = !previous || STEALTH_SCORE[report.stealthRating] > STEALTH_SCORE[previous.bestStealthRating];
-  const newBestScore = !previous || report.score > previous.bestScore;
+  const reportScore = Math.max(0, Math.floor(Number(report.score) || 0));
+  const newBestScore = !previous || reportScore > previous.bestScore;
 
   const sector: SectorBest = {
     levelIndex: report.levelIndex,
@@ -73,7 +74,7 @@ export function saveSectorReport(report: SectorReport): ProgressUpdate {
     bestStealthRating: newBestStealth ? report.stealthRating : previous.bestStealthRating,
     bestAccuracy: previous ? Math.max(previous.bestAccuracy, report.accuracy) : report.accuracy,
     leastDamageTaken: previous ? Math.min(previous.leastDamageTaken, report.damageTaken) : report.damageTaken,
-    bestScore: previous ? Math.max(previous.bestScore, report.score) : report.score,
+    bestScore: previous ? Math.max(previous.bestScore, reportScore) : reportScore,
     completions: (previous?.completions ?? 0) + 1,
     updatedAt: new Date().toISOString()
   };

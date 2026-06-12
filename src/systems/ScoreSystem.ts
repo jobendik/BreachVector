@@ -73,8 +73,7 @@ export class ScoreSystem {
   }
 
   finalizeReport(report: Omit<SectorReport, 'score' | 'scoreBreakdown'>): ScoreBreakdown {
-    const stealthBonus =
-      report.stealthRating === 'Silent' ? 1000 : report.stealthRating === 'Compromised' ? 400 : 0;
+    const stealthBonus = report.stealthRating === 'Silent' ? 1000 : report.stealthRating === 'Compromised' ? 400 : 0;
     const accuracyBonus = Math.round(report.accuracy * 500);
     const timeBonus = Math.max(0, Math.round(1500 - report.completionTimeSeconds * 5));
     const untouchableBonus = report.damageTaken <= 0 ? 750 : 0;
