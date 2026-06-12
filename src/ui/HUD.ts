@@ -7,6 +7,7 @@ import { ObjectivePanel } from './ObjectivePanel';
 import { AlertPanel } from './AlertPanel';
 import { TacticalLog } from './TacticalLog';
 import { Minimap } from './Minimap';
+import { ScorePanel } from './ScorePanel';
 import { cssColor } from '../utils/colors';
 
 export class HUD {
@@ -16,6 +17,7 @@ export class HUD {
   private readonly alert: AlertPanel;
   private readonly log: TacticalLog;
   private readonly minimap: Minimap;
+  private readonly score: ScorePanel;
   private readonly promptGraphics: Phaser.GameObjects.Graphics;
   private readonly prompt: Phaser.GameObjects.Text;
 
@@ -28,6 +30,7 @@ export class HUD {
     this.alert = new AlertPanel(scene);
     this.log = new TacticalLog(scene);
     this.minimap = new Minimap(scene);
+    this.score = new ScorePanel(scene);
     this.promptGraphics = scene.add
       .graphics()
       .setScrollFactor(0)
@@ -61,6 +64,7 @@ export class HUD {
     this.alert.layout(width - 330, height - 104, 310, 84);
     this.minimap.layout(width - 230, height - 270, 210, 145);
     this.log.layout(340, height - 104, Math.max(300, width - 700), 84);
+    this.score.layout(width / 2, 20, height * 0.3);
 
     this.prompt.setPosition(width / 2, height - 22);
   }
@@ -98,11 +102,27 @@ export class HUD {
     this.minimap.update(snapshot);
   }
 
+  updateScore(payload: {
+    score: number;
+    chain: number;
+    multiplier: number;
+    comboRemainingSeconds: number;
+    comboWindowSeconds: number;
+    delta: number;
+  }): void {
+    this.score.updateScore(payload);
+  }
+
+  announceStreak(label: string, chain: number): void {
+    this.score.announceStreak(label, chain);
+  }
+
   destroy(): void {
     this.scene.scale.off('resize', this.layout, this);
 
     this.prompt.destroy();
     this.promptGraphics.destroy();
+    this.score.destroy();
 
     // Optional, only if these classes have destroy() methods:
     // this.health.destroy();
