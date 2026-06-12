@@ -24,6 +24,7 @@ export interface SectorBest {
   bestStealthRating: StealthRating;
   bestAccuracy: number;
   leastDamageTaken: number;
+  bestScore: number;
   completions: number;
   updatedAt: string;
 }
@@ -38,6 +39,7 @@ export interface ProgressUpdate {
   newBestGrade: boolean;
   newBestTime: boolean;
   newBestStealth: boolean;
+  newBestScore: boolean;
   firstClear: boolean;
 }
 
@@ -61,6 +63,8 @@ export function saveSectorReport(report: SectorReport): ProgressUpdate {
   const newBestGrade = !previous || GRADE_SCORE[report.grade] > GRADE_SCORE[previous.bestGrade];
   const newBestTime = !previous || report.completionTimeSeconds < previous.bestTimeSeconds;
   const newBestStealth = !previous || STEALTH_SCORE[report.stealthRating] > STEALTH_SCORE[previous.bestStealthRating];
+  const reportScore = Math.max(0, Math.floor(Number(report.score) || 0));
+  const newBestScore = !previous || reportScore > previous.bestScore;
 
   const sector: SectorBest = {
     levelIndex: report.levelIndex,
@@ -70,13 +74,18 @@ export function saveSectorReport(report: SectorReport): ProgressUpdate {
     bestStealthRating: newBestStealth ? report.stealthRating : previous.bestStealthRating,
     bestAccuracy: previous ? Math.max(previous.bestAccuracy, report.accuracy) : report.accuracy,
     leastDamageTaken: previous ? Math.min(previous.leastDamageTaken, report.damageTaken) : report.damageTaken,
+    bestScore: previous ? Math.max(previous.bestScore, reportScore) : reportScore,
     completions: (previous?.completions ?? 0) + 1,
     updatedAt: new Date().toISOString()
   };
 
   progress.sectors[key] = sector;
   saveProgress(progress);
-  return { progress, sector, newBestGrade, newBestTime, newBestStealth, firstClear };
+  return { progress, sector, newBestGrade, newBestTime, newBestStealth, newBestScore, firstClear };
+}
+
+export function totalBestScore(progress = loadProgress()): number {
+  return Object.values(progress.sectors).reduce((sum, sector) => sum + sector.bestScore, 0);
 }
 
 export function nextIncompleteLevelIndex(progress = loadProgress()): number {
@@ -129,6 +138,7 @@ function normalizeProgress(progress: Partial<ProgressState>): ProgressState {
       bestStealthRating: normalizeStealth(value.bestStealthRating),
       bestAccuracy: clamp01(value.bestAccuracy),
       leastDamageTaken: Math.max(0, Number(value.leastDamageTaken) || 0),
+      bestScore: Math.max(0, Math.floor(Number(value.bestScore) || 0)),
       completions: Math.max(1, Math.floor(Number(value.completions) || 1)),
       updatedAt: typeof value.updatedAt === 'string' ? value.updatedAt : new Date(0).toISOString()
     };

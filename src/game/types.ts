@@ -231,6 +231,15 @@ export type SectorGrade = 'S' | 'A' | 'B' | 'C';
 
 export type StealthRating = 'Silent' | 'Compromised' | 'Full Breach';
 
+export interface ScoreBreakdown {
+  combatScore: number;
+  stealthBonus: number;
+  accuracyBonus: number;
+  timeBonus: number;
+  untouchableBonus: number;
+  total: number;
+}
+
 export interface SectorReport {
   levelIndex: number;
   levelName: string;
@@ -246,6 +255,8 @@ export interface SectorReport {
   stealthRating: StealthRating;
   grade: SectorGrade;
   killBreakdown: Record<string, number>;
+  score: number;
+  scoreBreakdown: ScoreBreakdown;
   deathCause?: string;
   tacticalAdvice?: string;
 }

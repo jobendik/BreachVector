@@ -7,7 +7,9 @@ export const GameEvents = {
   AlertChanged: 'alert-changed',
   TacticalLog: 'tactical-log',
   MinimapSnapshot: 'minimap-snapshot',
-  DebugChanged: 'debug-changed'
+  DebugChanged: 'debug-changed',
+  ScoreChanged: 'score-changed',
+  KillStreak: 'kill-streak'
 } as const;
 
 export interface GameEventMap {
@@ -17,6 +19,15 @@ export interface GameEventMap {
   [GameEvents.TacticalLog]: TacticalLogEntry;
   [GameEvents.MinimapSnapshot]: MinimapSnapshot;
   [GameEvents.DebugChanged]: { enabled: boolean };
+  [GameEvents.ScoreChanged]: {
+    score: number;
+    chain: number;
+    multiplier: number;
+    comboRemainingSeconds: number;
+    comboWindowSeconds: number;
+    delta: number;
+  };
+  [GameEvents.KillStreak]: { label: string; chain: number };
 }
 
 class TypedEventBus {

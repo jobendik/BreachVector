@@ -45,6 +45,8 @@ import { MissionSystem } from '../systems/MissionSystem';
 import { PathfindingSystem } from '../systems/PathfindingSystem';
 import { VisionSystem } from '../systems/VisionSystem';
 import { WeaponSystem } from '../systems/WeaponSystem';
+import { ScoreSystem } from '../systems/ScoreSystem';
+import { loadSettings } from '../game/settings';
 
 export class GameScene extends Phaser.Scene {
   level!: LevelData;
@@ -82,6 +84,7 @@ export class GameScene extends Phaser.Scene {
   enemyAI!: EnemyAISystem;
   minimap!: MinimapSystem;
   debug!: DebugSystem;
+  score!: ScoreSystem;
 
   private visibilityGraphics!: Phaser.GameObjects.Graphics;
   private grenadeAimGraphics!: Phaser.GameObjects.Graphics;
@@ -221,6 +224,7 @@ export class GameScene extends Phaser.Scene {
     this.updateProjectiles(deltaSeconds);
     this.updateGrenades(deltaSeconds);
     this.alert.update(deltaSeconds);
+    this.score.update(deltaSeconds);
     this.trackAlertState();
     this.updateVisibility(time / 1000);
     this.updateLighting(deltaSeconds, time / 1000);
@@ -333,12 +337,36 @@ export class GameScene extends Phaser.Scene {
     this.enemiesKilled += 1;
     const sourceLabel = enemy.lastDamageSource?.label ?? 'Unknown';
     this.killBreakdown[sourceLabel] = (this.killBreakdown[sourceLabel] ?? 0) + 1;
+
+    const award = this.score.registerKill(enemy.role, this.alert.state === 'hidden');
+    const multiplierSuffix = award.multiplier > 1 ? `  x${award.multiplier.toFixed(1).replace(/\.0$/, '')}` : '';
+    const ghostSuffix = award.ghostBonus ? '  GHOST' : '';
+    this.effects.floatingText(enemy.x, enemy.y - 42, `+${award.points}${multiplierSuffix}${ghostSuffix}`, 0xfbbf24);
+    this.killZoomPunch(award.chain);
+
     if (enemy.role === 'captain') {
       this.mission.commandTargetKilled();
     }
     if (Math.random() < 0.28) {
       this.dropSupply(enemy.x, enemy.y);
     }
+  }
+
+  private killZoomPunch(chain: number): void {
+    const settings = loadSettings();
+    if (settings.reduceMotion) {
+      return;
+    }
+    const camera = this.cameras.main;
+    this.tweens.killTweensOf(camera);
+    camera.setZoom(1);
+    this.tweens.add({
+      targets: camera,
+      zoom: chain >= 3 ? 1.05 : 1.03,
+      duration: 70,
+      yoyo: true,
+      ease: 'Sine.easeOut'
+    });
   }
 
   onPlayerKilled(): void {
@@ -424,6 +452,7 @@ export class GameScene extends Phaser.Scene {
 
     this.lighting = new LightingSystem(this);
     this.effects = new EffectsSystem(this, this.lighting);
+    this.score = new ScoreSystem();
     this.audio = new AudioSystem();
     this.inputSystem = new InputSystem(this);
     this.alert = new AlertSystem();
@@ -472,7 +501,17 @@ export class GameScene extends Phaser.Scene {
       terminals: this.terminalEntities,
       doors: this.doorEntities,
       input: this.inputSystem,
-      mission: this.mission,
+      mission: {
+        terminalHacked: (id: string) => {
+          this.mission.terminalHacked(id);
+          this.score.addObjectiveScore(250);
+          const terminal = this.terminalEntities.find((entry) => entry.terminalId === id);
+          if (terminal) {
+            this.effects.floatingText(terminal.x, terminal.y - 30, '+250 HACK', 0x22d3ee);
+          }
+        },
+        canExtract: () => this.mission.canExtract()
+      },
       audio: this.audio,
       effects: this.effects,
       emitNoise: (point, radius, important) => this.emitNoise(point, radius, important),
@@ -848,7 +887,7 @@ export class GameScene extends Phaser.Scene {
     const accuracy = this.shotsFired > 0 ? this.shotsHit / this.shotsFired : 1;
     const stealthRating = this.stealthRating();
     const deathCause = deathSource?.label;
-    return {
+    const base = {
       levelIndex: this.levelIndex,
       levelName: this.level.name,
       completionTimeSeconds,
@@ -866,6 +905,17 @@ export class GameScene extends Phaser.Scene {
       deathCause,
       tacticalAdvice: deathCause ? this.tacticalAdvice(deathCause) : undefined
     };
+    const scoreBreakdown = deathCause
+      ? {
+          combatScore: this.score.totalScore,
+          stealthBonus: 0,
+          accuracyBonus: 0,
+          timeBonus: 0,
+          untouchableBonus: 0,
+          total: this.score.totalScore
+        }
+      : this.score.finalizeReport(base);
+    return { ...base, score: scoreBreakdown.total, scoreBreakdown };
   }
 
   private stealthRating(): StealthRating {
